@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, Users, QrCode } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
@@ -43,7 +43,9 @@ function PlayerList({ players }: { players: Player[] }) {
   );
 }
 
-export default function ModeratorLobbyPage({ params: { lobbyId } }: { params: { lobbyId: string } }) {
+export default function ModeratorLobbyPage() {
+  const params = useParams();
+  const lobbyId = Array.isArray(params.lobbyId) ? params.lobbyId[0] : params.lobbyId;
   const [lobbyData, setLobbyData] = useState<LobbyData | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +54,7 @@ export default function ModeratorLobbyPage({ params: { lobbyId } }: { params: { 
   const [joinUrl, setJoinUrl] = useState('');
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && lobbyId) {
         setJoinUrl(`${window.location.origin}/lobby/join?code=${lobbyId}`);
     }
   }, [lobbyId]);
@@ -95,6 +97,19 @@ export default function ModeratorLobbyPage({ params: { lobbyId } }: { params: { 
   const handleCloseLobby = async () => {
     if (!lobbyId) return;
     try {
+      // First, delete all players in the subcollection
+      const playersColRef = collection(db, 'lobbies', lobbyId, 'players');
+      // In a real app with many players, this should be handled by a server-side function
+      // to avoid leaving orphaned data if the client disconnects.
+      // For this project, we assume a small number of players.
+      const querySnapshot = await onSnapshot(playersColRef, snapshot => {
+          snapshot.docs.forEach(async (playerDoc) => {
+              await deleteDoc(playerDoc.ref);
+          });
+      });
+      // querySnapshot(); // Detach listener immediately
+
+      // Then, delete the lobby itself
       const lobbyDocRef = doc(db, 'lobbies', lobbyId);
       await deleteDoc(lobbyDocRef);
       console.log(`Salon ${lobbyId} et ses joueurs ont été supprimés.`);
