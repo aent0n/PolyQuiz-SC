@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -11,7 +12,7 @@ import { generateStarCitizenQuiz, type GenerateStarCitizenQuizOutput } from '@/a
 import { useToast } from "@/hooks/use-toast";
 import type { Quiz } from '@/types/quiz';
 import { db } from '@/lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, writeBatch } from 'firebase/firestore';
 
 // Fonction pour générer un ID de salon simple
 const generateLobbyId = () => {
@@ -25,6 +26,16 @@ export default function CreateLobbyPage() {
 
   const handleCreateLobby = async (data: QuizSetupFormValues) => {
     setIsLoading(true);
+    if (!data.playerName) {
+        toast({
+            title: "Nom de l'hôte requis",
+            description: "Veuillez entrer votre nom pour créer le salon.",
+            variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+    }
+
     try {
       const result: GenerateStarCitizenQuizOutput = await generateStarCitizenQuiz({
         topic: data.topic,
@@ -34,23 +45,32 @@ export default function CreateLobbyPage() {
       const generatedQuiz: Quiz = result.quiz;
       const lobbyId = generateLobbyId();
       
-      // Sauvegarder le salon dans Firestore
-      await setDoc(doc(db, "lobbies", lobbyId), {
+      const batch = writeBatch(db);
+      
+      // 1. Créer le document du salon
+      const lobbyDocRef = doc(db, "lobbies", lobbyId);
+      batch.set(lobbyDocRef, {
         quiz: generatedQuiz,
         topic: data.topic,
         timer: data.timer,
         createdAt: new Date(),
-        // D'autres métadonnées peuvent être ajoutées ici
+        hostName: data.playerName,
       });
 
-      console.log(`Salon ${lobbyId} créé avec le quiz :`, generatedQuiz);
+      // 2. Ajouter l'hôte comme premier joueur dans la sous-collection
+      const playerDocRef = doc(collection(lobbyDocRef, 'players'), data.playerName);
+      batch.set(playerDocRef, { name: data.playerName, joinedAt: new Date() });
+
+      // Exécuter les opérations en une seule fois
+      await batch.commit();
+
+      console.log(`Salon ${lobbyId} créé avec le quiz et l'hôte ${data.playerName}:`, generatedQuiz);
 
       toast({
         title: "Salon créé avec succès!",
         description: `Le salon ${lobbyId} a été généré. Redirection en cours...`,
       });
       
-      // Rediriger vers la page du modérateur avec l'ID du salon
       router.push(`/moderator/${lobbyId}`);
 
     } catch (error: any) {
@@ -83,7 +103,12 @@ export default function CreateLobbyPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <QuizSetupForm onSubmit={handleCreateLobby} isLoading={isLoading} showHeader={false} />
+            <QuizSetupForm 
+              onSubmit={handleCreateLobby} 
+              isLoading={isLoading} 
+              showHeader={false} 
+              showPlayerName={true} 
+            />
             <div className="text-center mt-6">
               <Link href="/" passHref>
                 <Button variant="outline">

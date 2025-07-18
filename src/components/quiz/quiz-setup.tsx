@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -28,6 +29,7 @@ const formSchema = z.object({
   topic: z.string(),
   numQuestions: z.coerce.number().min(1).max(50),
   timer: z.coerce.number().min(5).max(300),
+  playerName: z.string().optional(),
 });
 
 export type QuizSetupFormValues = z.infer<typeof formSchema>;
@@ -47,9 +49,10 @@ interface QuizSetupFormProps {
   onSubmit: (values: QuizSetupFormValues) => void;
   isLoading: boolean;
   showHeader?: boolean;
+  showPlayerName?: boolean;
 }
 
-export function QuizSetupForm({ onSubmit, isLoading, showHeader = true }: QuizSetupFormProps) {
+export function QuizSetupForm({ onSubmit, isLoading, showHeader = true, showPlayerName = false }: QuizSetupFormProps) {
   const [isCustomQuestions, setIsCustomQuestions] = useState(false);
   const [isCustomTimer, setIsCustomTimer] = useState(false);
 
@@ -59,6 +62,7 @@ export function QuizSetupForm({ onSubmit, isLoading, showHeader = true }: QuizSe
     numQuestionsCustom: z.coerce.number().optional(),
     timerSelect: z.string(),
     timerCustom: z.coerce.number().optional(),
+    playerName: z.string().optional(),
   }).refine(data => {
     if (data.numQuestionsSelect === 'custom') {
       return data.numQuestionsCustom !== undefined && data.numQuestionsCustom >= 1 && data.numQuestionsCustom <= 50;
@@ -87,6 +91,7 @@ export function QuizSetupForm({ onSubmit, isLoading, showHeader = true }: QuizSe
       timerSelect: '15',
       numQuestionsCustom: undefined,
       timerCustom: undefined,
+      playerName: '',
     },
   });
 
@@ -95,6 +100,7 @@ export function QuizSetupForm({ onSubmit, isLoading, showHeader = true }: QuizSe
       topic: values.topic,
       numQuestions: values.numQuestionsSelect === 'custom' ? values.numQuestionsCustom! : Number(values.numQuestionsSelect),
       timer: values.timerSelect === 'custom' ? values.timerCustom! : Number(values.timerSelect),
+      playerName: values.playerName,
     };
     onSubmit(finalValues);
   };
@@ -113,6 +119,21 @@ export function QuizSetupForm({ onSubmit, isLoading, showHeader = true }: QuizSe
       <CardContent className={!showHeader ? "pt-6" : ""}>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+            {showPlayerName && (
+               <FormField
+                  control={form.control}
+                  name="playerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Votre Nom</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nom de l'hôte" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+            )}
             <FormField
               control={form.control}
               name="topic"
