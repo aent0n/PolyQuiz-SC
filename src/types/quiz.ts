@@ -24,5 +24,6 @@ export interface LobbyData {
   quiz: Quiz;
   status: 'waiting' | 'playing' | 'finished';
   gameState: GameState;
+  hostName: string; // Add this line
   players?: { [key: string]: PlayerState };
 }

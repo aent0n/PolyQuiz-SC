@@ -3,9 +3,9 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { doc, onSnapshot, updateDoc, collection, writeBatch, getDocs, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Loader2, ShieldCheck, XCircle, Flame, Star, ChevronsRight } from 'lucide-react';
+import { Loader2, XCircle, Flame, Star, ChevronsRight } from 'lucide-react';
 import type { LobbyData, PlayerState } from '@/types/quiz';
 import { QuizGame } from '../quiz/quiz-game';
 import { Button } from '../ui/button';
@@ -26,7 +26,10 @@ function HostControls({ lobbyId }: { lobbyId: string }) {
   const handleNextQuestion = async () => {
     const lobbyDocRef = doc(db, 'lobbies', lobbyId);
     try {
-        const lobbyData = (await getDoc(lobbyDocRef)).data() as LobbyData;
+        const lobbySnap = await getDoc(lobbyDocRef);
+        if (!lobbySnap.exists()) return;
+
+        const lobbyData = lobbySnap.data() as LobbyData;
         const nextIndex = lobbyData.gameState.currentQuestionIndex + 1;
 
         if (nextIndex >= lobbyData.quiz.length) {
@@ -100,7 +103,7 @@ function PlayerHud({ playerState }: { playerState: PlayerState | null }) {
                         </div>
                         <p className="text-xs text-foreground/70">Score</p>
                     </div>
-                    {playerState.streak > 0 && (
+                    {playerState.streak > 1 && (
                          <div className="text-center">
                             <div className="flex items-center gap-2 text-2xl font-bold text-yellow-400">
                                 <Flame className="h-6 w-6" />
@@ -140,12 +143,14 @@ export function GameContainer() {
                 const data = docSnap.data() as LobbyData;
                 setLobbyData(data);
 
+                // Ensure host's player name is set for HUD
                 if (isHost && !playerName && data.hostName) {
                     setPlayerName(data.hostName);
                 }
 
                 if (data.status === 'finished' || (data.gameState && data.gameState.phase === 'finished')) {
-                    router.push('/');
+                    // TODO: Redirect to a results page instead of home
+                    router.push('/'); 
                 }
             } else {
                 setError('La partie a été terminée ou n\'existe plus.');
@@ -169,7 +174,8 @@ export function GameContainer() {
                 if(docSnap.exists()){
                     setPlayerState(docSnap.data() as PlayerState);
                 } else {
-                    console.log(`Player doc for ${playerName} not found.`);
+                    // This can happen briefly when a player joins, it's not an error.
+                    // console.log(`Player doc for ${playerName} not found yet.`);
                 }
             });
         }
