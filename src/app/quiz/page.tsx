@@ -46,7 +46,7 @@ export default function QuizPage() {
        
        <div className="z-10 w-full max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
         {!quiz ? (
-          <QuizSetupForm onSubmit={handleStartQuiz} isLoading={isLoading} />
+          <QuizSetupForm onSubmit={handleStartQuiz} isLoading={isLoading} showHeader={true} />
         ) : (
           <QuizGame quiz={quiz} topic={topic} onFinish={handleQuizFinish} timer={timer} />
         )}

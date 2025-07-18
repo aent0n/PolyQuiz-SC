@@ -46,9 +46,10 @@ const timerOptions = [10, 15, 20, 30];
 interface QuizSetupFormProps {
   onSubmit: (values: QuizSetupFormValues) => void;
   isLoading: boolean;
+  showHeader?: boolean;
 }
 
-export function QuizSetupForm({ onSubmit, isLoading }: QuizSetupFormProps) {
+export function QuizSetupForm({ onSubmit, isLoading, showHeader = true }: QuizSetupFormProps) {
   const [isCustomQuestions, setIsCustomQuestions] = useState(false);
   const [isCustomTimer, setIsCustomTimer] = useState(false);
 
@@ -101,13 +102,15 @@ export function QuizSetupForm({ onSubmit, isLoading }: QuizSetupFormProps) {
 
   return (
     <Card className="border-primary/20 shadow-lg shadow-primary/10">
-      <CardHeader className="text-center">
-        <CardTitle className="text-4xl md:text-5xl font-headline tracking-wider text-primary">POLYQUIZ</CardTitle>
-        <CardDescription className="text-foreground/80 pt-2">
-          Testez vos connaissances de l'univers de Star Citizen.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+      {showHeader && (
+        <CardHeader className="text-center">
+          <CardTitle className="text-4xl md:text-5xl font-headline tracking-wider text-primary">POLYQUIZ</CardTitle>
+          <CardDescription className="text-foreground/80 pt-2">
+            Testez vos connaissances de l'univers de Star Citizen.
+          </CardDescription>
+        </CardHeader>
+      )}
+      <CardContent className={!showHeader ? "pt-6" : ""}>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
             <FormField

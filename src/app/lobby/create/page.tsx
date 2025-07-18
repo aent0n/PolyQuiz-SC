@@ -61,7 +61,7 @@ export default function CreateLobbyPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <QuizSetupForm onSubmit={handleCreateLobby} isLoading={isLoading} />
+            <QuizSetupForm onSubmit={handleCreateLobby} isLoading={isLoading} showHeader={false} />
             <div className="text-center mt-6">
               <Link href="/" passHref>
                 <Button variant="outline">
