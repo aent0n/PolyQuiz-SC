@@ -10,7 +10,7 @@
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 262.1 83.3% 57.8%; /* Vibrant Purple */
+    --primary: 232 80% 57%; /* New Accent Blue */
     --primary-foreground: 0 0% 98%;
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
@@ -22,21 +22,21 @@
     --destructive-foreground: 0 0% 98%;
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 262.1 83.3% 57.8%;
+    --ring: 232 80% 57%;
     --radius: 0.8rem;
-    --chart-1: 262.1 83.3% 57.8%;
-    --chart-2: 280 80% 60%;
-    --chart-3: 300 80% 65%;
-    --chart-4: 240 70% 60%;
-    --chart-5: 220 75% 65%;
+    --chart-1: 232 80% 57%;
+    --chart-2: 220 80% 60%;
+    --chart-3: 210 80% 65%;
+    --chart-4: 200 70% 60%;
+    --chart-5: 190 75% 65%;
     --sidebar-background: 240 10% 3.9%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 262.1 83.3% 57.8%;
+    --sidebar-primary: 232 80% 57%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 262.1 83.3% 57.8%;
+    --sidebar-ring: 232 80% 57%;
   }
 
   .dark {
@@ -46,7 +46,7 @@
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 262.1 83.3% 57.8%;
+    --primary: 232 80% 57%;
     --primary-foreground: 0 0% 98%;
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
@@ -58,20 +58,20 @@
     --destructive-foreground: 0 0% 98%;
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 262.1 83.3% 57.8%;
-    --chart-1: 262.1 83.3% 57.8%;
-    --chart-2: 280 80% 60%;
-    --chart-3: 300 80% 65%;
-    --chart-4: 240 70% 60%;
-    --chart-5: 220 75% 65%;
+    --ring: 232 80% 57%;
+    --chart-1: 232 80% 57%;
+    --chart-2: 220 80% 60%;
+    --chart-3: 210 80% 65%;
+    --chart-4: 200 70% 60%;
+    --chart-5: 190 75% 65%;
     --sidebar-background: 240 10% 3.9%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 262.1 83.3% 57.8%;
+    --sidebar-primary: 232 80% 57%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 262.1 83.3% 57.8%;
+    --sidebar-ring: 232 80% 57%;
   }
 }
 
@@ -82,4 +82,11 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+@font-face {
+  font-family: 'Kusanagi';
+  src: url('/fonts/Kusanagi.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
 }
