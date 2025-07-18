@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, Users } from 'lucide-react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface LobbyData {
   topic: string;
@@ -45,11 +45,11 @@ export default function ModeratorLobbyPage({ params }: { params: Promise<{ lobby
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { lobbyId } = use(params);
+  const router = useRouter();
 
   useEffect(() => {
     if (!lobbyId) return;
 
-    // Listener for lobby data
     const lobbyDocRef = doc(db, 'lobbies', lobbyId);
     const unsubscribeLobby = onSnapshot(lobbyDocRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -66,30 +66,28 @@ export default function ModeratorLobbyPage({ params }: { params: Promise<{ lobby
       setLoading(false);
     });
 
-    // Listener for players
     const playersColRef = collection(db, 'lobbies', lobbyId, 'players');
     const unsubscribePlayers = onSnapshot(playersColRef, (snapshot) => {
       const playersList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Player));
       setPlayers(playersList);
     });
 
-    // Cleanup function: this will be called when the component unmounts
     return () => {
       unsubscribeLobby();
       unsubscribePlayers();
-
-      // Delete the lobby when the host leaves the page
-      const deleteLobby = async () => {
-        try {
-          await deleteDoc(lobbyDocRef);
-          console.log(`Salon ${lobbyId} et ses joueurs ont été supprimés.`);
-        } catch (error) {
-          console.error("Erreur lors de la suppression du salon:", error);
-        }
-      };
-      deleteLobby();
     };
   }, [lobbyId]);
+
+  const handleCloseLobby = async () => {
+    try {
+      const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+      await deleteDoc(lobbyDocRef);
+      console.log(`Salon ${lobbyId} et ses joueurs ont été supprimés.`);
+      router.push('/');
+    } catch (error) {
+      console.error("Erreur lors de la suppression du salon:", error);
+    }
+  };
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 bg-background">
@@ -140,12 +138,10 @@ export default function ModeratorLobbyPage({ params }: { params: Promise<{ lobby
               </>
             )}
              <div className="text-center mt-8">
-                <Link href="/" passHref>
-                  <Button variant="outline">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Quitter et fermer le salon
-                  </Button>
-                </Link>
+                <Button variant="outline" onClick={handleCloseLobby}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Quitter et fermer le salon
+                </Button>
             </div>
           </CardContent>
         </Card>
