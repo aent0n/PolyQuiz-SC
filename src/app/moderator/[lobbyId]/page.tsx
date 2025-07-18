@@ -43,8 +43,7 @@ function PlayerList({ players }: { players: Player[] }) {
   );
 }
 
-export default function ModeratorLobbyPage({ params }: { params: { lobbyId: string } }) {
-  const { lobbyId } = params;
+export default function ModeratorLobbyPage({ params: { lobbyId } }: { params: { lobbyId: string } }) {
   const [lobbyData, setLobbyData] = useState<LobbyData | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
