@@ -38,7 +38,7 @@ export default function JoinLobbyPage() {
           title: 'Salon trouvé !',
           description: 'Vous allez être redirigé...',
         });
-        // TODO: Créer la page du joueur et rediriger vers /player/[lobbyId]
+        // Rediriger vers la page du joueur
         router.push(`/player/${lobbyCode.toUpperCase()}`);
       } else {
         toast({
@@ -78,6 +78,7 @@ export default function JoinLobbyPage() {
                 placeholder="Entrez le code du salon"
                 className="text-center text-lg tracking-widest"
                 maxLength={6}
+                autoCapitalize="characters"
               />
               <Button type="submit" className="w-full text-lg py-6" disabled={isLoading}>
                 {isLoading ? (
