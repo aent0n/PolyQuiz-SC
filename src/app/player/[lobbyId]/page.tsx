@@ -3,7 +3,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, collection, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -18,24 +18,49 @@ function PlayerLobbyContent() {
   const params = useParams();
   const lobbyId = Array.isArray(params.lobbyId) ? params.lobbyId[0] : params.lobbyId;
   const searchParams = useSearchParams();
-  const playerName = searchParams.get('playerName') || 'Joueur Anonyme';
+  const playerName = searchParams.get('playerName');
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lobbyData, setLobbyData] = useState<LobbyData | null>(null);
 
   useEffect(() => {
-    if (!lobbyId) return;
-
-    // TODO: Enregistrer le joueur dans la sous-collection 'players' du salon
+    if (!lobbyId || !playerName) {
+        setError("Informations de salon ou de joueur manquantes.");
+        setLoading(false);
+        return;
+    }
 
     const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+    const playerDocRef = doc(collection(lobbyDocRef, 'players'), playerName);
+
+    // Enregistrer le joueur
+    const registerPlayer = async () => {
+        try {
+            // Vérifier si le salon existe avant d'y ajouter un joueur
+            const lobbySnap = await getDoc(lobbyDocRef);
+            if (!lobbySnap.exists()) {
+                setError('Ce salon n\'existe plus.');
+                setLoading(false);
+                return;
+            }
+            await setDoc(playerDocRef, { name: playerName, joinedAt: new Date() });
+            console.log(`Joueur ${playerName} enregistré dans le salon ${lobbyId}`);
+        } catch (err) {
+            console.error("Erreur lors de l'enregistrement du joueur:", err);
+            setError("Impossible d'enregistrer votre participation.");
+            setLoading(false);
+        }
+    };
+
+    registerPlayer();
+
     const unsubscribe = onSnapshot(lobbyDocRef, (docSnap) => {
       if (docSnap.exists()) {
         setLobbyData(docSnap.data() as LobbyData);
         setError(null);
       } else {
-        setError('Le salon a été supprimé ou n\'existe pas.');
+        setError('Le salon a été fermé par l\'hôte.');
         setLobbyData(null);
       }
       setLoading(false);
@@ -45,7 +70,19 @@ function PlayerLobbyContent() {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+        unsubscribe();
+        // Supprimer le joueur du salon lorsqu'il quitte la page
+        const unregisterPlayer = async () => {
+            try {
+                await deleteDoc(playerDocRef);
+                console.log(`Joueur ${playerName} retiré du salon ${lobbyId}`);
+            } catch (error) {
+                console.error("Erreur lors du retrait du joueur:", error);
+            }
+        };
+        unregisterPlayer();
+    };
   }, [lobbyId, playerName]);
 
   if (loading) {
