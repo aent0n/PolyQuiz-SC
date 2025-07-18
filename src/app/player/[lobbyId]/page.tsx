@@ -47,8 +47,7 @@ function PlayerLobbyContent() {
     }
 
     const lobbyDocRef = doc(db, 'lobbies', lobbyId);
-    const playerDocRef = doc(collection(lobbyDocRef, 'players'), playerName);
-
+    
     const registerPlayer = async () => {
         try {
             const lobbySnap = await getDoc(lobbyDocRef);
@@ -57,6 +56,8 @@ function PlayerLobbyContent() {
                 setLoading(false);
                 return;
             }
+            // Corrected player document reference
+            const playerDocRef = doc(db, 'lobbies', lobbyId, 'players', playerName);
             await setDoc(playerDocRef, { 
                 name: playerName, 
                 joinedAt: new Date(),
