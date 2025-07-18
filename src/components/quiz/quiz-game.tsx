@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import type { Quiz, QuizQuestion, GameState } from '@/types/quiz';
 import { QuizResults } from './quiz-results';
 import { db } from '@/lib/firebase';
-import { doc, setDoc, updateDoc, collection, getDocs, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, collection, onSnapshot } from 'firebase/firestore';
 
 interface QuizGameProps {
   lobbyId: string;
@@ -34,19 +34,22 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
   const isAnswerPhase = phase === 'question';
   
   const submitAnswer = useCallback(async (answer: string) => {
-    if (!playerName) return;
+    if (!playerName || !isAnswerPhase) return;
 
     const answerRef = doc(db, 'lobbies', lobbyId, 'answers', `${currentQuestionIndex}-${playerName}`);
-    await setDoc(answerRef, {
-      playerName,
-      answer: answer,
-      questionIndex: currentQuestionIndex,
-      isCorrect: answer === currentQuestion?.answer,
-      timestamp: new Date(),
-    });
+    try {
+        await setDoc(answerRef, {
+          playerName,
+          answer: answer,
+          questionIndex: currentQuestionIndex,
+          isCorrect: answer === currentQuestion?.answer,
+          timestamp: new Date(),
+        });
+    } catch(e) {
+        console.error("Failed to submit answer:", e);
+    }
 
-    // This part is now handled in game-container to avoid race conditions
-  }, [lobbyId, playerName, currentQuestionIndex, currentQuestion]);
+  }, [lobbyId, playerName, currentQuestionIndex, currentQuestion, isAnswerPhase]);
 
   const handleAnswerSelect = (option: string) => {
     if (isAnswerPhase) {
@@ -71,11 +74,14 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
     const answersColRef = collection(db, 'lobbies', lobbyId, 'answers');
     const unsubscribe = onSnapshot(answersColRef, async (snapshot) => {
         const currentQuestionAnswers = snapshot.docs.filter(doc => doc.data().questionIndex === currentQuestionIndex);
-        if (currentQuestionAnswers.length === playerCount) {
+        if (currentQuestionAnswers.length >= playerCount) {
             const lobbyDocRef = doc(db, 'lobbies', lobbyId);
-            await updateDoc(lobbyDocRef, {
-                'gameState.phase': 'reveal',
-            });
+            const currentPhase = (await doc(lobbyDocRef).get()).data()?.gameState.phase;
+            if(currentPhase === 'question') {
+                 await updateDoc(lobbyDocRef, {
+                    'gameState.phase': 'reveal',
+                });
+            }
         }
     });
 
@@ -124,7 +130,7 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
     if (option === currentQuestion.answer) {
       return 'bg-green-600 hover:bg-green-600 text-white border-green-500'; // Correct answer
     }
-    if (option === selectedAnswer) {
+    if (option === selectedAnswer && selectedAnswer !== currentQuestion.answer) {
       return 'bg-red-600 hover:bg-red-600 text-white border-red-500'; // Wrong selected answer
     }
     return 'bg-secondary/50 opacity-60'; // Other incorrect options
