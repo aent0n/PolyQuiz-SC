@@ -1,9 +1,12 @@
+
 'use client';
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { LogIn, PlusCircle, Shield, PenSquare } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+
 
 export function HomePage() {
   return (
@@ -43,6 +46,11 @@ export function HomePage() {
           </Button>
         </Link>
       </CardContent>
+       <CardFooter className="flex flex-col items-center justify-center pt-6">
+          <Badge variant="outline" className="text-xs">
+            v0.9 - L'hôte est maintenant un joueur !
+          </Badge>
+      </CardFooter>
     </Card>
   );
 }
