@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -14,11 +14,11 @@ interface LobbyData {
   quiz: any[];
 }
 
-export default function ModeratorLobbyPage({ params }: { params: { lobbyId: string } }) {
+export default function ModeratorLobbyPage({ params }: { params: Promise<{ lobbyId: string }> }) {
   const [lobbyData, setLobbyData] = useState<LobbyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { lobbyId } = params;
+  const { lobbyId } = use(params);
 
   useEffect(() => {
     const fetchLobbyData = async () => {
@@ -50,6 +50,7 @@ export default function ModeratorLobbyPage({ params }: { params: { lobbyId: stri
         <Card className="border-primary/20 shadow-lg shadow-primary/10">
           <CardHeader>
             <CardTitle className="text-center text-3xl text-primary">Salon du Modérateur</CardTitle>
+
             <CardDescription className="text-center text-lg text-foreground/80">
               Code du salon : <span className="font-bold text-primary">{lobbyId}</span>
             </CardDescription>
