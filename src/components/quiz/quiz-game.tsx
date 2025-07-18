@@ -12,16 +12,17 @@ interface QuizGameProps {
   quiz: Quiz;
   topic: string;
   onFinish: () => void;
+  timer?: number;
 }
 
-const QUESTION_TIME = 15; // seconds
+const QUESTION_TIME = 15; // default seconds
 
-export function QuizGame({ quiz, topic, onFinish }: QuizGameProps) {
+export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME }: QuizGameProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(QUESTION_TIME);
+  const [timeLeft, setTimeLeft] = useState(timer);
 
   const currentQuestion: QuizQuestion | undefined = quiz[currentQuestionIndex];
 
@@ -29,8 +30,8 @@ export function QuizGame({ quiz, topic, onFinish }: QuizGameProps) {
     setIsAnswered(false);
     setSelectedAnswer(null);
     setCurrentQuestionIndex((prev) => prev + 1);
-    setTimeLeft(QUESTION_TIME);
-  }, []);
+    setTimeLeft(timer);
+  }, [timer]);
 
   const handleAnswer = useCallback(() => {
     if (isAnswered) return;
@@ -51,11 +52,16 @@ export function QuizGame({ quiz, topic, onFinish }: QuizGameProps) {
       handleAnswer();
       return;
     }
-    const timer = setInterval(() => {
+    const timerId = setInterval(() => {
       setTimeLeft((t) => t - 1);
     }, 1000);
-    return () => clearInterval(timer);
+    return () => clearInterval(timerId);
   }, [timeLeft, isAnswered, handleAnswer]);
+  
+  useEffect(() => {
+    setTimeLeft(timer);
+  }, [timer]);
+
 
   if (!currentQuestion) {
     return <QuizResults score={score} total={quiz.length} onRestart={onFinish} />;
@@ -83,7 +89,7 @@ export function QuizGame({ quiz, topic, onFinish }: QuizGameProps) {
           <span>Question {currentQuestionIndex + 1} sur {quiz.length}</span>
           <span className="capitalize">{topic}</span>
         </div>
-        <Progress value={(timeLeft / QUESTION_TIME) * 100} className="w-full h-2 mt-2 [&>div]:bg-primary" />
+        <Progress value={(timeLeft / timer) * 100} className="w-full h-2 mt-2 [&>div]:bg-primary" />
         <CardTitle className="pt-4 text-2xl">{currentQuestion.question}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

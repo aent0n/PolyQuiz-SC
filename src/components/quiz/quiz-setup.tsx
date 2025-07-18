@@ -25,9 +25,10 @@ import { Loader2, Rocket } from 'lucide-react';
 const formSchema = z.object({
   topic: z.string(),
   numQuestions: z.coerce.number().min(3).max(10),
+  timer: z.coerce.number().min(5).max(60),
 });
 
-type QuizSetupFormValues = z.infer<typeof formSchema>;
+export type QuizSetupFormValues = z.infer<typeof formSchema>;
 
 const topics = [
   { value: 'lore', label: 'Lore' },
@@ -36,6 +37,13 @@ const topics = [
   { value: 'ships', label: 'Vaisseaux' },
   { value: 'organizations', label: 'Organisations' },
 ];
+
+const timers = [
+    { value: 10, label: '10 secondes' },
+    { value: 15, label: '15 secondes' },
+    { value: 20, label: '20 secondes' },
+    { value: 30, label: '30 secondes' },
+]
 
 interface QuizSetupFormProps {
   onSubmit: (values: QuizSetupFormValues) => void;
@@ -48,6 +56,7 @@ export function QuizSetupForm({ onSubmit, isLoading }: QuizSetupFormProps) {
     defaultValues: {
       topic: 'lore',
       numQuestions: 5,
+      timer: 15,
     },
   });
 
@@ -102,6 +111,30 @@ export function QuizSetupForm({ onSubmit, isLoading }: QuizSetupFormProps) {
                       {[3, 5, 10].map((num) => (
                         <SelectItem key={num} value={String(num)}>
                           {num} Questions
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="timer"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Temps par question</FormLabel>
+                  <Select onValueChange={(value) => field.onChange(Number(value))} defaultValue={String(field.value)}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionnez le temps par question" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {timers.map((timer) => (
+                        <SelectItem key={timer.value} value={String(timer.value)}>
+                          {timer.label}
                         </SelectItem>
                       ))}
                     </SelectContent>

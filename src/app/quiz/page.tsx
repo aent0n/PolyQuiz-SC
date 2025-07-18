@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { QuizSetupForm } from '@/components/quiz/quiz-setup';
+import { QuizSetupForm, type QuizSetupFormValues } from '@/components/quiz/quiz-setup';
 import { QuizGame } from '@/components/quiz/quiz-game';
 import { generateStarCitizenQuiz, type GenerateStarCitizenQuizOutput } from '@/ai/flows/generate-star-citizen-quiz';
 import { useToast } from "@/hooks/use-toast";
@@ -12,12 +12,17 @@ export default function QuizPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const [topic, setTopic] = useState<string>('lore');
+  const [timer, setTimer] = useState(15);
 
-  const handleStartQuiz = async (data: { topic: string, numQuestions: number }) => {
+  const handleStartQuiz = async (data: QuizSetupFormValues) => {
     setIsLoading(true);
     setTopic(data.topic);
+    setTimer(data.timer);
     try {
-      const result: GenerateStarCitizenQuizOutput = await generateStarCitizenQuiz(data);
+      const result: GenerateStarCitizenQuizOutput = await generateStarCitizenQuiz({
+        topic: data.topic,
+        numQuestions: data.numQuestions,
+      });
       // The AI sometimes returns a malformed JSON string with backticks and "json" prefix.
       const cleanedJsonString = result.quiz.replace(/```json/g, '').replace(/```/g, '').trim();
       const parsedQuiz = JSON.parse(cleanedJsonString);
@@ -46,7 +51,7 @@ export default function QuizPage() {
         {!quiz ? (
           <QuizSetupForm onSubmit={handleStartQuiz} isLoading={isLoading} />
         ) : (
-          <QuizGame quiz={quiz} topic={topic} onFinish={handleQuizFinish} />
+          <QuizGame quiz={quiz} topic={topic} onFinish={handleQuizFinish} timer={timer} />
         )}
       </div>
 

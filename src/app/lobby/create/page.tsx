@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import { QuizSetupForm } from '@/components/quiz/quiz-setup';
+import { QuizSetupForm, type QuizSetupFormValues } from '@/components/quiz/quiz-setup';
 import { generateStarCitizenQuiz, type GenerateStarCitizenQuizOutput } from '@/ai/flows/generate-star-citizen-quiz';
 import { useToast } from "@/hooks/use-toast";
 import type { Quiz } from '@/types/quiz';
@@ -14,14 +14,19 @@ export default function CreateLobbyPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleCreateLobby = async (data: { topic: string, numQuestions: number }) => {
+  const handleCreateLobby = async (data: QuizSetupFormValues) => {
     setIsLoading(true);
     try {
-      const result: GenerateStarCitizenQuizOutput = await generateStarCitizenQuiz(data);
+      const result: GenerateStarCitizenQuizOutput = await generateStarCitizenQuiz({
+        topic: data.topic,
+        numQuestions: data.numQuestions
+      });
       const cleanedJsonString = result.quiz.replace(/```json/g, '').replace(/```/g, '').trim();
       const parsedQuiz: { quiz: Quiz } = JSON.parse(cleanedJsonString);
       
       console.log('Quiz généré pour le salon:', parsedQuiz.quiz);
+      console.log('Timer par question:', data.timer);
+
 
       toast({
         title: "Salon créé avec succès!",
