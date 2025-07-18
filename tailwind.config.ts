@@ -18,7 +18,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ["var(--font-inter)"],
-        headline: ["Kusanagi", "sans-serif"],
+        headline: ["var(--font-orbitron)", "sans-serif"],
       },
       colors: {
         border: 'hsl(var(--border))',

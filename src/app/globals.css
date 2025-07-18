@@ -83,10 +83,3 @@
     @apply bg-background text-foreground;
   }
 }
-
-@font-face {
-  font-family: 'Kusanagi';
-  src: url('/fonts/Kusanagi.otf') format('opentype');
-  font-weight: normal;
-  font-style: normal;
-}
