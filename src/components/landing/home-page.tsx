@@ -9,7 +9,7 @@ export function HomePage() {
   return (
     <Card className="border-primary/20 shadow-lg shadow-primary/10 bg-card/50 backdrop-blur-sm">
       <CardHeader className="text-center">
-        <CardTitle className="text-5xl md:text-6xl font-headline font-bold tracking-wider text-primary">
+        <CardTitle className="text-5xl md:text-6xl font-headline tracking-wider text-primary">
           POLYQUIZ
         </CardTitle>
         <CardDescription className="text-foreground/80 pt-2 text-lg">
