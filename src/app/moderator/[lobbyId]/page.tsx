@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState, use } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useToast } from "@/hooks/use-toast";
 
 interface LobbyData {
   topic: string;
@@ -19,19 +20,21 @@ export default function ModeratorLobbyPage({ params }: { params: Promise<{ lobby
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { lobbyId } = use(params);
+  const { toast } = useToast();
 
   useEffect(() => {
+    if (!lobbyId) return;
+
+    const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+
     const fetchLobbyData = async () => {
-      if (!lobbyId) return;
-      
       try {
-        const lobbyDocRef = doc(db, 'lobbies', lobbyId);
         const lobbyDocSnap = await getDoc(lobbyDocRef);
 
         if (lobbyDocSnap.exists()) {
           setLobbyData(lobbyDocSnap.data() as LobbyData);
         } else {
-          setError('Le salon est introuvable.');
+          setError('Le salon est introuvable ou a été supprimé.');
         }
       } catch (err) {
         console.error("Erreur lors de la récupération du salon:", err);
@@ -42,6 +45,26 @@ export default function ModeratorLobbyPage({ params }: { params: Promise<{ lobby
     };
 
     fetchLobbyData();
+
+    // Fonction de nettoyage qui s'exécute lorsque le composant est démonté
+    return () => {
+      const deleteLobby = async () => {
+        try {
+          await deleteDoc(lobbyDocRef);
+          console.log(`Salon ${lobbyId} supprimé.`);
+          // Pas besoin de toast ici, car l'utilisateur a déjà quitté la page.
+        } catch (error) {
+          console.error("Erreur lors de la suppression du salon:", error);
+          // On ne peut pas afficher de toast de manière fiable car la page est en cours de fermeture.
+        }
+      };
+      
+      // On vérifie que le salon existe avant de tenter de le supprimer
+      if (lobbyData) {
+        deleteLobby();
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lobbyId]);
 
   return (
