@@ -4,8 +4,16 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { LogIn, PlusCircle, Shield, PenSquare } from 'lucide-react';
+import { LogIn, PlusCircle, Shield, PenSquare, Rocket, GitCommitHorizontal } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 
 export function HomePage() {
@@ -47,9 +55,37 @@ export function HomePage() {
         </Link>
       </CardContent>
        <CardFooter className="flex flex-col items-center justify-center pt-6">
-          <Badge variant="outline" className="text-xs">
-            v0.9 - L'hôte est maintenant un joueur !
-          </Badge>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Badge variant="outline" className="text-xs cursor-pointer hover:bg-accent">
+                v0.9
+            </Badge>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle className="text-primary text-2xl">Notes de version v0.9</DialogTitle>
+              <DialogDescription>
+                L'hôte est maintenant un joueur à part entière ! Voici les changements majeurs.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="flex items-start gap-4">
+                <Rocket className="h-5 w-5 text-primary mt-1" />
+                <div>
+                  <h4 className="font-semibold">L'hôte participe au jeu</h4>
+                  <p className="text-sm text-muted-foreground">Fini la vue modérateur passive ! L'hôte joue, répond aux questions et est classé comme tout le monde.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <GitCommitHorizontal className="h-5 w-5 text-primary mt-1" />
+                <div>
+                  <h4 className="font-semibold">Correction des bugs de flux</h4>
+                  <p className="text-sm text-muted-foreground">Résolution des problèmes où la partie se bloquait ou sautait des questions.</p>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardFooter>
     </Card>
   );
