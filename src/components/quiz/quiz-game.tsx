@@ -33,9 +33,25 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
   const currentQuestion: QuizQuestion | undefined = quiz[currentQuestionIndex];
   const isAnswerPhase = phase === 'question';
   
+  const submitAnswer = useCallback(async (answer: string) => {
+    if (!playerName) return;
+
+    const answerRef = doc(db, 'lobbies', lobbyId, 'answers', `${currentQuestionIndex}-${playerName}`);
+    await setDoc(answerRef, {
+      playerName,
+      answer: answer,
+      questionIndex: currentQuestionIndex,
+      isCorrect: answer === currentQuestion?.answer,
+      timestamp: new Date(),
+    });
+
+    // This part is now handled in game-container to avoid race conditions
+  }, [lobbyId, playerName, currentQuestionIndex, currentQuestion]);
+
   const handleAnswerSelect = (option: string) => {
     if (isAnswerPhase) {
       setSelectedAnswer(option);
+      submitAnswer(option);
     }
   }
 
@@ -47,39 +63,25 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
     });
     return () => unsubscribe();
   }, [lobbyId]);
-  
-  const submitAnswer = useCallback(async () => {
-    if (!playerName || !selectedAnswer) return;
 
-    const lobbyDocRef = doc(db, 'lobbies', lobbyId);
-    const answerRef = doc(db, 'lobbies', lobbyId, 'answers', `${currentQuestionIndex}-${playerName}`);
-    await setDoc(answerRef, {
-      playerName,
-      answer: selectedAnswer,
-      questionIndex: currentQuestionIndex,
-      isCorrect: selectedAnswer === currentQuestion?.answer,
-      timestamp: new Date(),
+  // Effect to check if all players have answered
+  useEffect(() => {
+    if (!isAnswerPhase || playerCount === 0) return;
+
+    const answersColRef = collection(db, 'lobbies', lobbyId, 'answers');
+    const unsubscribe = onSnapshot(answersColRef, async (snapshot) => {
+        const currentQuestionAnswers = snapshot.docs.filter(doc => doc.data().questionIndex === currentQuestionIndex);
+        if (currentQuestionAnswers.length === playerCount) {
+            const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+            await updateDoc(lobbyDocRef, {
+                'gameState.phase': 'reveal',
+            });
+        }
     });
 
-    // Check if all players have answered
-    const answersColRef = collection(db, 'lobbies', lobbyId, 'answers');
-    const answersSnapshot = await getDocs(answersColRef);
-    const currentQuestionAnswers = answersSnapshot.docs.filter(doc => doc.data().questionIndex === currentQuestionIndex);
+    return () => unsubscribe();
 
-    if (currentQuestionAnswers.length === playerCount && playerCount > 0) {
-        await updateDoc(lobbyDocRef, {
-            'gameState.phase': 'reveal',
-        });
-    }
-
-  }, [lobbyId, playerName, selectedAnswer, currentQuestionIndex, currentQuestion, playerCount]);
-
-  // Submit answer when selected
-  useEffect(() => {
-    if(selectedAnswer){
-        submitAnswer();
-    }
-  }, [selectedAnswer, submitAnswer]);
+  }, [isAnswerPhase, lobbyId, currentQuestionIndex, playerCount]);
 
 
   useEffect(() => {
@@ -148,14 +150,14 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
                 "h-auto w-full justify-start p-4 text-left whitespace-normal text-base transition-all duration-300 border-2 border-transparent",
                 getButtonClass(option)
               )}
-              disabled={!isAnswerPhase || !!selectedAnswer}
+              disabled={!isAnswerPhase}
             >
               {option}
             </Button>
           ))}
         </div>
          <div className="text-center text-foreground/60 h-6">
-            { isAnswerPhase && !!selectedAnswer && <p>Réponse verrouillée. En attente des autres joueurs...</p>}
+            { isAnswerPhase && !!selectedAnswer && <p>Réponse sélectionnée. Vous pouvez changer tant que le temps n'est pas écoulé.</p>}
             { !isAnswerPhase && <p>Les réponses sont verrouillées. En attente de l'hôte...</p>}
         </div>
       </CardContent>
