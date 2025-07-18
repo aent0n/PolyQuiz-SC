@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { doc, onSnapshot, collection, deleteDoc, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, collection, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -97,21 +97,21 @@ export default function ModeratorLobbyPage() {
   const handleCloseLobby = async () => {
     if (!lobbyId) return;
     try {
-      // First, delete all players in the subcollection
-      const playersColRef = collection(db, 'lobbies', lobbyId, 'players');
-      // In a real app with many players, this should be handled by a server-side function
-      // to avoid leaving orphaned data if the client disconnects.
-      // For this project, we assume a small number of players.
-      const querySnapshot = await onSnapshot(playersColRef, snapshot => {
-          snapshot.docs.forEach(async (playerDoc) => {
-              await deleteDoc(playerDoc.ref);
-          });
-      });
-      // querySnapshot(); // Detach listener immediately
+      const batch = writeBatch(db);
 
-      // Then, delete the lobby itself
+      const playersColRef = collection(db, 'lobbies', lobbyId, 'players');
+      const playersSnapshot = await onSnapshot(playersColRef, (snapshot) => {
+        snapshot.docs.forEach((playerDoc) => {
+            batch.delete(playerDoc.ref);
+        });
+      });
+      // playersSnapshot(); // Detach listener
+      
       const lobbyDocRef = doc(db, 'lobbies', lobbyId);
-      await deleteDoc(lobbyDocRef);
+      batch.delete(lobbyDocRef);
+      
+      await batch.commit();
+
       console.log(`Salon ${lobbyId} et ses joueurs ont été supprimés.`);
       router.push('/');
     } catch (error) {
@@ -119,12 +119,16 @@ export default function ModeratorLobbyPage() {
     }
   };
 
-  const handleStartGame = async () => {
+ const handleStartGame = async () => {
     if (!lobbyId) return;
     try {
       const lobbyDocRef = doc(db, 'lobbies', lobbyId);
       await updateDoc(lobbyDocRef, {
-        status: 'playing'
+        status: 'playing',
+        gameState: {
+          currentQuestionIndex: 0,
+          phase: 'question', // 'question', 'reveal', 'finished'
+        },
       });
       // The useEffect will handle the redirection
     } catch (error) {

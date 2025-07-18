@@ -2,79 +2,94 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import type { Quiz, QuizQuestion } from '@/types/quiz';
+import type { Quiz, QuizQuestion, GameState } from '@/types/quiz';
 import { QuizResults } from './quiz-results';
+import { db } from '@/lib/firebase';
+import { doc, setDoc, updateDoc } from 'firebase/firestore';
 
 interface QuizGameProps {
+  lobbyId: string;
+  playerName: string | null;
   quiz: Quiz;
   topic: string;
   onFinish: () => void;
   timer?: number;
+  gameState: GameState;
 }
 
 const QUESTION_TIME = 15; // default seconds
 
-export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME }: QuizGameProps) {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [score, setScore] = useState(0);
+export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId, playerName, gameState }: QuizGameProps) {
+  const [score, setScore] = useState(0); // This will be calculated from Firestore later
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [isAnswered, setIsAnswered] = useState(false);
   const [timeLeft, setTimeLeft] = useState(timer);
 
+  const { currentQuestionIndex, phase } = gameState;
   const currentQuestion: QuizQuestion | undefined = quiz[currentQuestionIndex];
-
-  const nextQuestion = useCallback(() => {
-    setIsAnswered(false);
-    setSelectedAnswer(null);
-    setCurrentQuestionIndex((prev) => prev + 1);
-    setTimeLeft(timer);
-  }, [timer]);
-
-  const handleAnswer = useCallback(() => {
-    if (isAnswered) return;
-    
-    setIsAnswered(true);
-    if (selectedAnswer === currentQuestion?.answer) {
-      setScore((s) => s + 1);
+  const isAnswerPhase = phase === 'question';
+  
+  const handleAnswerSelect = (option: string) => {
+    if (isAnswerPhase) {
+      setSelectedAnswer(option);
     }
-
-    setTimeout(() => {
-      nextQuestion();
-    }, 2000);
-  }, [isAnswered, selectedAnswer, currentQuestion, nextQuestion]);
+  }
+  
+  // Submit answer to Firestore when timer ends or answer is locked
+  const submitAnswer = useCallback(async () => {
+    if (!playerName || !selectedAnswer) return;
+    const answerRef = doc(db, 'lobbies', lobbyId, 'answers', `${currentQuestionIndex}-${playerName}`);
+    await setDoc(answerRef, {
+      playerName,
+      answer: selectedAnswer,
+      questionIndex: currentQuestionIndex,
+      isCorrect: selectedAnswer === currentQuestion?.answer,
+    });
+  }, [lobbyId, playerName, selectedAnswer, currentQuestionIndex, currentQuestion]);
 
   useEffect(() => {
-    if (isAnswered) return;
+    // Reset for new question
+    setSelectedAnswer(null);
+    setTimeLeft(timer);
+  }, [currentQuestionIndex, timer]);
+  
+  // Timer countdown effect
+  useEffect(() => {
+    if (!isAnswerPhase) {
+      if(timeLeft > 0) setTimeLeft(0);
+      return;
+    };
+    
     if (timeLeft === 0) {
-      handleAnswer();
+      // Time's up, lock in the answer and tell the host to reveal
+      submitAnswer();
+      const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+      updateDoc(lobbyDocRef, { 'gameState.phase': 'reveal' });
       return;
     }
+
     const timerId = setInterval(() => {
       setTimeLeft((t) => t - 1);
     }, 1000);
+
     return () => clearInterval(timerId);
-  }, [timeLeft, isAnswered, handleAnswer]);
-  
-  useEffect(() => {
-    setTimeLeft(timer);
-  }, [timer]);
+  }, [timeLeft, isAnswerPhase, submitAnswer, lobbyId]);
 
 
   if (!currentQuestion) {
-    return <QuizResults score={score} total={quiz.length} onRestart={onFinish} />;
+     return <QuizResults score={score} total={quiz.length} onRestart={onFinish} />;
   }
 
   const getButtonClass = (option: string) => {
-    if (!isAnswered) {
+    if (isAnswerPhase) {
       return selectedAnswer === option
-        ? 'bg-primary/80 border-primary' // Highlight selected answer
+        ? 'border-primary bg-primary/20'
         : 'bg-secondary/80';
     }
-    // After answer is revealed
+    // Reveal phase
     if (option === currentQuestion.answer) {
       return 'bg-green-600 hover:bg-green-600 text-white border-green-500'; // Correct answer
     }
@@ -99,16 +114,19 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME }: QuizG
           {currentQuestion.options.map((option) => (
             <Button
               key={option}
-              onClick={() => !isAnswered && setSelectedAnswer(option)}
+              onClick={() => handleAnswerSelect(option)}
               className={cn(
                 "h-auto w-full justify-start p-4 text-left whitespace-normal text-base transition-all duration-300 border-2 border-transparent",
                 getButtonClass(option)
               )}
-              disabled={isAnswered}
+              disabled={!isAnswerPhase}
             >
               {option}
             </Button>
           ))}
+        </div>
+         <div className="text-center text-foreground/60 h-6">
+            {!isAnswerPhase && <p>Les réponses sont verrouillées. En attente de l'hôte...</p>}
         </div>
       </CardContent>
     </Card>

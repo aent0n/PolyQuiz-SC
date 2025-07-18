@@ -3,18 +3,56 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Loader2 } from 'lucide-react';
-import type { Quiz } from '@/types/quiz';
+import { Loader2, ShieldCheck, XCircle } from 'lucide-react';
+import type { GameState, LobbyData } from '@/types/quiz';
 import { QuizGame } from '../quiz/quiz-game';
+import { Button } from '../ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 
-interface LobbyData {
-  topic: string;
-  timer: number;
-  quiz: Quiz;
-  status: 'waiting' | 'playing' | 'finished';
+function HostControls({ lobbyId, currentQuestionIndex, quizLength }: { lobbyId: string, currentQuestionIndex: number, quizLength: number }) {
+  const handleNextQuestion = async () => {
+    const nextIndex = currentQuestionIndex + 1;
+    const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+    if (nextIndex >= quizLength) {
+      await updateDoc(lobbyDocRef, {
+        'gameState.phase': 'finished',
+      });
+    } else {
+      await updateDoc(lobbyDocRef, {
+        'gameState.currentQuestionIndex': nextIndex,
+        'gameState.phase': 'question',
+      });
+    }
+  };
+
+  const handleNullifyQuestion = async () => {
+    // This simply moves to the next question without scoring.
+    // A more complex implementation could track nullified questions.
+    console.log(`Question ${currentQuestionIndex} annulée.`);
+    await handleNextQuestion();
+  };
+
+  return (
+    <Card className="mt-6 border-primary/50">
+      <CardHeader>
+        <CardTitle className="text-center">Contrôles de l'Hôte</CardTitle>
+      </CardHeader>
+      <CardContent className="flex justify-center gap-4">
+        <Button onClick={handleNextQuestion} size="lg">
+          <ShieldCheck className="mr-2 h-5 w-5" />
+          Question Suivante
+        </Button>
+        <Button onClick={handleNullifyQuestion} variant="destructive" size="lg">
+          <XCircle className="mr-2 h-5 w-5" />
+          Annuler la Question
+        </Button>
+      </CardContent>
+    </Card>
+  );
 }
+
 
 export function GameContainer() {
     const params = useParams();
@@ -23,6 +61,8 @@ export function GameContainer() {
     
     const lobbyId = Array.isArray(params.lobbyId) ? params.lobbyId[0] : params.lobbyId;
     const playerName = searchParams.get('playerName');
+    const role = searchParams.get('role'); // 'moderator' or null
+    const isHost = role === 'moderator';
 
     const [lobbyData, setLobbyData] = useState<LobbyData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -36,7 +76,7 @@ export function GameContainer() {
             if (docSnap.exists()) {
                 const data = docSnap.data() as LobbyData;
                 setLobbyData(data);
-                if (data.status === 'finished') {
+                if (data.status === 'finished' || (data.gameState && data.gameState.phase === 'finished')) {
                     // Redirect to results page later
                     router.push('/');
                 }
@@ -54,10 +94,15 @@ export function GameContainer() {
         return () => unsubscribe();
     }, [lobbyId, router]);
 
-    const handleFinish = () => {
-      // For now, just go home. Later, this will go to a results screen.
-      console.log("Quiz finished!");
-      router.push('/');
+    const handleFinish = async () => {
+      if (isHost) {
+        const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+        await updateDoc(lobbyDocRef, {
+            'gameState.phase': 'finished',
+            status: 'finished',
+        });
+      }
+      // Players will be redirected by the listener
     }
 
     if (loading) {
@@ -71,18 +116,27 @@ export function GameContainer() {
         return <p className="text-destructive text-center text-lg">{error}</p>;
     }
     
-    if (!lobbyData) {
-        return <p className="text-destructive text-center text-lg">Données de la partie introuvables.</p>;
+    if (!lobbyData || !lobbyData.gameState) {
+        return <p className="text-destructive text-center text-lg">Données de la partie introuvables ou invalides.</p>;
     }
+    
+    const { quiz, topic, timer, gameState } = lobbyData;
+    const currentQuestionIndex = gameState.currentQuestionIndex;
 
-    // Both players and the moderator/host will play the game.
-    // A dedicated moderator view can be implemented later.
     return (
-        <QuizGame 
-            quiz={lobbyData.quiz}
-            topic={lobbyData.topic}
-            timer={lobbyData.timer}
-            onFinish={handleFinish}
-        />
+        <div>
+            <QuizGame 
+                lobbyId={lobbyId}
+                playerName={playerName}
+                quiz={quiz}
+                topic={topic}
+                timer={timer}
+                onFinish={handleFinish}
+                gameState={gameState}
+            />
+            {isHost && gameState.phase === 'reveal' && (
+                <HostControls lobbyId={lobbyId} currentQuestionIndex={currentQuestionIndex} quizLength={quiz.length}/>
+            )}
+        </div>
     );
 }
