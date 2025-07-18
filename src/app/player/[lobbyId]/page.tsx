@@ -1,7 +1,8 @@
+
 'use client';
 
-import { use, useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
@@ -14,7 +15,8 @@ interface LobbyData {
 }
 
 function PlayerLobbyContent() {
-  const { lobbyId } = use(useParams());
+  const params = useParams();
+  const lobbyId = Array.isArray(params.lobbyId) ? params.lobbyId[0] : params.lobbyId;
   const searchParams = useSearchParams();
   const playerName = searchParams.get('playerName') || 'Joueur Anonyme';
 
@@ -95,19 +97,7 @@ function PlayerLobbyContent() {
   );
 }
 
-// HACK: Next.js App Router et Suspense ne fonctionnent pas toujours bien ensemble.
-// Il faut utiliser un composant wrapper avec <Suspense> pour que `useSearchParams` fonctionne.
-function useParams() {
-    const [params, setParams] = useState<{ lobbyId: string } | null>(null);
-    useEffect(() => {
-        const pathParts = window.location.pathname.split('/');
-        const lobbyId = pathParts[pathParts.length - 1];
-        setParams({ lobbyId });
-    }, []);
-    return params || { lobbyId: '' };
-}
-
-
+// L'utilisation de <Suspense> est la bonne pratique pour les composants qui utilisent `useParams` ou `useSearchParams`.
 export default function PlayerLobbyPage() {
   return (
     <Suspense fallback={
