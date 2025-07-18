@@ -19,13 +19,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Rocket } from 'lucide-react';
+import { useState } from 'react';
 
 const formSchema = z.object({
   topic: z.string(),
-  numQuestions: z.coerce.number().min(3).max(10),
-  timer: z.coerce.number().min(5).max(60),
+  numQuestions: z.coerce.number().min(1).max(50),
+  timer: z.coerce.number().min(5).max(300),
 });
 
 export type QuizSetupFormValues = z.infer<typeof formSchema>;
@@ -38,12 +40,8 @@ const topics = [
   { value: 'organizations', label: 'Organisations' },
 ];
 
-const timers = [
-    { value: 10, label: '10 secondes' },
-    { value: 15, label: '15 secondes' },
-    { value: 20, label: '20 secondes' },
-    { value: 30, label: '30 secondes' },
-]
+const questionOptions = [3, 5, 10];
+const timerOptions = [10, 15, 20, 30];
 
 interface QuizSetupFormProps {
   onSubmit: (values: QuizSetupFormValues) => void;
@@ -51,14 +49,53 @@ interface QuizSetupFormProps {
 }
 
 export function QuizSetupForm({ onSubmit, isLoading }: QuizSetupFormProps) {
-  const form = useForm<QuizSetupFormValues>({
-    resolver: zodResolver(formSchema),
+  const [isCustomQuestions, setIsCustomQuestions] = useState(false);
+  const [isCustomTimer, setIsCustomTimer] = useState(false);
+
+  const customFormSchema = z.object({
+    topic: z.string(),
+    numQuestionsSelect: z.string(),
+    numQuestionsCustom: z.coerce.number().optional(),
+    timerSelect: z.string(),
+    timerCustom: z.coerce.number().optional(),
+  }).refine(data => {
+    if (data.numQuestionsSelect === 'custom') {
+      return data.numQuestionsCustom !== undefined && data.numQuestionsCustom >= 1 && data.numQuestionsCustom <= 50;
+    }
+    return true;
+  }, {
+    message: "Veuillez entrer un nombre entre 1 et 50.",
+    path: ['numQuestionsCustom'],
+  }).refine(data => {
+    if (data.timerSelect === 'custom') {
+      return data.timerCustom !== undefined && data.timerCustom >= 5 && data.timerCustom <= 300;
+    }
+    return true;
+  }, {
+    message: "Veuillez entrer un nombre entre 5 et 300.",
+    path: ['timerCustom'],
+  });
+
+  type CustomFormValues = z.infer<typeof customFormSchema>;
+
+  const form = useForm<CustomFormValues>({
+    resolver: zodResolver(customFormSchema),
     defaultValues: {
       topic: 'lore',
-      numQuestions: 5,
-      timer: 15,
+      numQuestionsSelect: '5',
+      timerSelect: '15',
     },
   });
+
+  const handleFormSubmit = (values: CustomFormValues) => {
+    const finalValues: QuizSetupFormValues = {
+      topic: values.topic,
+      numQuestions: values.numQuestionsSelect === 'custom' ? values.numQuestionsCustom! : Number(values.numQuestionsSelect),
+      timer: values.timerSelect === 'custom' ? values.timerCustom! : Number(values.timerSelect),
+    };
+    onSubmit(finalValues);
+  };
+
 
   return (
     <Card className="border-primary/20 shadow-lg shadow-primary/10">
@@ -70,7 +107,7 @@ export function QuizSetupForm({ onSubmit, isLoading }: QuizSetupFormProps) {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
             <FormField
               control={form.control}
               name="topic"
@@ -97,52 +134,96 @@ export function QuizSetupForm({ onSubmit, isLoading }: QuizSetupFormProps) {
             />
             <FormField
               control={form.control}
-              name="numQuestions"
+              name="numQuestionsSelect"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nombre de questions</FormLabel>
-                  <Select onValueChange={(value) => field.onChange(Number(value))} defaultValue={String(field.value)}>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      setIsCustomQuestions(value === 'custom');
+                    }}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionnez le nombre de questions" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {[3, 5, 10].map((num) => (
+                      {questionOptions.map((num) => (
                         <SelectItem key={num} value={String(num)}>
                           {num} Questions
                         </SelectItem>
                       ))}
+                      <SelectItem value="custom">Personnalisé...</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            {isCustomQuestions && (
+              <FormField
+                control={form.control}
+                name="numQuestionsCustom"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre de questions personnalisé</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="Ex: 7" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <FormField
               control={form.control}
-              name="timer"
+              name="timerSelect"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Temps par question</FormLabel>
-                  <Select onValueChange={(value) => field.onChange(Number(value))} defaultValue={String(field.value)}>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      setIsCustomTimer(value === 'custom');
+                    }}
+                    defaultValue={String(field.value)}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionnez le temps par question" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {timers.map((timer) => (
-                        <SelectItem key={timer.value} value={String(timer.value)}>
-                          {timer.label}
+                      {timerOptions.map((timer) => (
+                        <SelectItem key={timer} value={String(timer)}>
+                          {timer} secondes
                         </SelectItem>
                       ))}
+                      <SelectItem value="custom">Personnalisé...</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            {isCustomTimer && (
+              <FormField
+                control={form.control}
+                name="timerCustom"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Temps par question personnalisé (secondes)</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="Ex: 25" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <Button type="submit" className="w-full text-lg py-6" disabled={isLoading}>
               {isLoading ? (
                 <>
