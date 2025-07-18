@@ -53,11 +53,17 @@ export default function CreateLobbyPage() {
       // Rediriger vers la page du modérateur avec l'ID du salon
       router.push(`/moderator/${lobbyId}`);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erreur détaillée :", error);
+      
+      let description = "Un problème est survenu. Veuillez consulter la console pour plus de détails et réessayer.";
+      if (error.message && error.message.includes('503 Service Unavailable')) {
+          description = "Le service de génération de quiz est actuellement surchargé. Veuillez réessayer dans quelques instants.";
+      }
+
       toast({
         title: "Erreur lors de la création du salon",
-        description: "Un problème est survenu. Veuillez consulter la console pour plus de détails et réessayer.",
+        description: description,
         variant: "destructive",
       });
     } finally {
