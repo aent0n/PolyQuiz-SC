@@ -10,6 +10,17 @@ import type { GameState, LobbyData } from '@/types/quiz';
 import { QuizGame } from '../quiz/quiz-game';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 function HostControls({ lobbyId, currentQuestionIndex, quizLength }: { lobbyId: string, currentQuestionIndex: number, quizLength: number }) {
   const handleNextQuestion = async () => {
@@ -29,7 +40,6 @@ function HostControls({ lobbyId, currentQuestionIndex, quizLength }: { lobbyId: 
 
   const handleNullifyQuestion = async () => {
     // This simply moves to the next question without scoring.
-    // A more complex implementation could track nullified questions.
     console.log(`Question ${currentQuestionIndex} annulée.`);
     await handleNextQuestion();
   };
@@ -44,10 +54,27 @@ function HostControls({ lobbyId, currentQuestionIndex, quizLength }: { lobbyId: 
           <ShieldCheck className="mr-2 h-5 w-5" />
           Question Suivante
         </Button>
-        <Button onClick={handleNullifyQuestion} variant="destructive" size="lg">
-          <XCircle className="mr-2 h-5 w-5" />
-          Annuler la Question
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" size="lg">
+              <XCircle className="mr-2 h-5 w-5" />
+              Annuler la Question
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Cette action annulera la question actuelle pour tous les joueurs.
+                Aucun point ne sera attribué et cela ne comptera pas comme une mauvaise réponse.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Retour</AlertDialogCancel>
+              <AlertDialogAction onClick={handleNullifyQuestion}>Confirmer</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );
