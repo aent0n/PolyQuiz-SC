@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useEffect, useState, use } from 'react';
-import { doc, onSnapshot, collection, deleteDoc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { doc, onSnapshot, collection, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ interface LobbyData {
   topic: string;
   timer: number;
   quiz: any[];
+  status?: 'waiting' | 'playing' | 'finished';
 }
 
 interface Player {
@@ -47,7 +48,7 @@ export default function ModeratorLobbyPage({ params }: { params: { lobbyId: stri
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { lobbyId } = use(params);
+  const { lobbyId } = params;
   const router = useRouter();
   const [joinUrl, setJoinUrl] = useState('');
 
@@ -63,7 +64,11 @@ export default function ModeratorLobbyPage({ params }: { params: { lobbyId: stri
     const lobbyDocRef = doc(db, 'lobbies', lobbyId);
     const unsubscribeLobby = onSnapshot(lobbyDocRef, (docSnap) => {
       if (docSnap.exists()) {
-        setLobbyData(docSnap.data() as LobbyData);
+        const data = docSnap.data() as LobbyData;
+        setLobbyData(data);
+        if(data.status === 'playing') {
+          router.push(`/game-state/${lobbyId}?role=moderator`);
+        }
         setError(null);
       } else {
         setError('Le salon est introuvable ou a été supprimé.');
@@ -86,7 +91,7 @@ export default function ModeratorLobbyPage({ params }: { params: { lobbyId: stri
       unsubscribeLobby();
       unsubscribePlayers();
     };
-  }, [lobbyId]);
+  }, [lobbyId, router]);
 
   const handleCloseLobby = async () => {
     try {
@@ -96,6 +101,18 @@ export default function ModeratorLobbyPage({ params }: { params: { lobbyId: stri
       router.push('/');
     } catch (error) {
       console.error("Erreur lors de la suppression du salon:", error);
+    }
+  };
+
+  const handleStartGame = async () => {
+    try {
+      const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+      await updateDoc(lobbyDocRef, {
+        status: 'playing'
+      });
+      // The useEffect will handle the redirection
+    } catch (error) {
+      console.error("Erreur lors du lancement de la partie:", error);
     }
   };
 
@@ -160,7 +177,7 @@ export default function ModeratorLobbyPage({ params }: { params: { lobbyId: stri
                   </CardContent>
                 </Card>
 
-                <Button size="lg" className="text-xl py-8 w-full max-w-sm" disabled={players.length === 0}>
+                <Button size="lg" className="text-xl py-8 w-full max-w-sm" disabled={players.length === 0} onClick={handleStartGame}>
                   Lancer la partie
                 </Button>
               </>

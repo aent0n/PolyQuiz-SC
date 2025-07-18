@@ -2,7 +2,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { doc, onSnapshot, setDoc, collection, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
@@ -12,10 +12,12 @@ import Link from 'next/link';
 
 interface LobbyData {
   topic: string;
+  status?: 'waiting' | 'playing' | 'finished';
 }
 
 function PlayerLobbyContent() {
   const params = useParams();
+  const router = useRouter();
   const lobbyId = Array.isArray(params.lobbyId) ? params.lobbyId[0] : params.lobbyId;
   const searchParams = useSearchParams();
   const playerName = searchParams.get('playerName');
@@ -34,10 +36,8 @@ function PlayerLobbyContent() {
     const lobbyDocRef = doc(db, 'lobbies', lobbyId);
     const playerDocRef = doc(collection(lobbyDocRef, 'players'), playerName);
 
-    // Enregistrer le joueur
     const registerPlayer = async () => {
         try {
-            // Vérifier si le salon existe avant d'y ajouter un joueur
             const lobbySnap = await getDoc(lobbyDocRef);
             if (!lobbySnap.exists()) {
                 setError('Ce salon n\'existe plus.');
@@ -57,7 +57,11 @@ function PlayerLobbyContent() {
 
     const unsubscribe = onSnapshot(lobbyDocRef, (docSnap) => {
       if (docSnap.exists()) {
-        setLobbyData(docSnap.data() as LobbyData);
+        const data = docSnap.data() as LobbyData;
+        setLobbyData(data);
+        if (data.status === 'playing') {
+          router.push(`/game-state/${lobbyId}?playerName=${encodeURIComponent(playerName)}`);
+        }
         setError(null);
       } else {
         setError('Le salon a été fermé par l\'hôte.');
@@ -70,20 +74,26 @@ function PlayerLobbyContent() {
       setLoading(false);
     });
 
+    const handleBeforeUnload = async (e: BeforeUnloadEvent) => {
+        e.preventDefault();
+        await deleteDoc(playerDocRef);
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     return () => {
-        unsubscribe();
-        // Supprimer le joueur du salon lorsqu'il quitte la page
+        window.removeEventListener('beforeunload', handleBeforeUnload);
         const unregisterPlayer = async () => {
             try {
                 await deleteDoc(playerDocRef);
                 console.log(`Joueur ${playerName} retiré du salon ${lobbyId}`);
             } catch (error) {
-                console.error("Erreur lors du retrait du joueur:", error);
+                // Silently fail, user is leaving anyway
             }
         };
         unregisterPlayer();
     };
-  }, [lobbyId, playerName]);
+  }, [lobbyId, playerName, router]);
 
   if (loading) {
     return (
@@ -134,7 +144,7 @@ function PlayerLobbyContent() {
   );
 }
 
-// L'utilisation de <Suspense> est la bonne pratique pour les composants qui utilisent `useParams` ou `useSearchParams`.
+
 export default function PlayerLobbyPage() {
   return (
     <Suspense fallback={
