@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -13,6 +14,7 @@ import type { Quiz } from '@/types/quiz';
 export default function CreateLobbyPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleCreateLobby = async (data: QuizSetupFormValues) => {
     setIsLoading(true);
@@ -27,12 +29,14 @@ export default function CreateLobbyPage() {
       console.log('Quiz généré pour le salon:', generatedQuiz);
       console.log('Timer par question:', data.timer);
 
-
       toast({
         title: "Salon créé avec succès!",
-        description: "Votre quiz a été généré. Redirection bientôt...",
+        description: "Votre quiz a été généré. Redirection en cours...",
       });
-      // TODO: Redirect to moderator view with lobby ID and quiz data
+
+      // TODO: Pass quiz data and lobby ID to moderator page
+      router.push('/moderator');
+
     } catch (error) {
       console.error(error);
       toast({
