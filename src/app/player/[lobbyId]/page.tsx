@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { doc, onSnapshot, setDoc, collection, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -26,6 +26,19 @@ function PlayerLobbyContent() {
   const [error, setError] = useState<string | null>(null);
   const [lobbyData, setLobbyData] = useState<LobbyData | null>(null);
 
+  const unregisterPlayer = useCallback(async () => {
+    if (playerName && lobbyId) {
+      try {
+        const playerDocRef = doc(db, 'lobbies', lobbyId, 'players', playerName);
+        await deleteDoc(playerDocRef);
+        console.log(`Joueur ${playerName} retiré du salon ${lobbyId}`);
+      } catch (error) {
+         console.error(`Impossible de retirer le joueur ${playerName}:`, error);
+      }
+    }
+  }, [lobbyId, playerName]);
+
+
   useEffect(() => {
     if (!lobbyId || !playerName) {
         setError("Informations de salon ou de joueur manquantes.");
@@ -39,8 +52,8 @@ function PlayerLobbyContent() {
     const registerPlayer = async () => {
         try {
             const lobbySnap = await getDoc(lobbyDocRef);
-            if (!lobbySnap.exists()) {
-                setError('Ce salon n\'existe plus.');
+            if (!lobbySnap.exists() || lobbySnap.data().status === 'playing') {
+                setError('Ce salon n\'existe plus ou la partie a déjà commencé.');
                 setLoading(false);
                 return;
             }
@@ -79,26 +92,22 @@ function PlayerLobbyContent() {
       setLoading(false);
     });
 
-    const handleBeforeUnload = async (e: BeforeUnloadEvent) => {
-        e.preventDefault();
-        await deleteDoc(playerDocRef);
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        unregisterPlayer();
     };
     
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
         window.removeEventListener('beforeunload', handleBeforeUnload);
-        const unregisterPlayer = async () => {
-            try {
-                await deleteDoc(playerDocRef);
-                console.log(`Joueur ${playerName} retiré du salon ${lobbyId}`);
-            } catch (error) {
-                // Silently fail, user is leaving anyway
-            }
-        };
-        unregisterPlayer();
+        unsubscribe();
     };
-  }, [lobbyId, playerName, router]);
+  }, [lobbyId, playerName, router, unregisterPlayer]);
+  
+  const handleLeave = async () => {
+      await unregisterPlayer();
+      router.push('/');
+  }
 
   if (loading) {
     return (
@@ -138,10 +147,11 @@ function PlayerLobbyContent() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center">
+          <div className="text-center space-y-4">
               <p className="text-xl font-bold">Bienvenue, {playerName} !</p>
               <p className="text-lg text-foreground/80 mt-2">En attente du lancement de la partie par l'hôte...</p>
               <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mt-4" />
+              <Button variant="outline" size="sm" onClick={handleLeave}>Quitter le salon</Button>
           </div>
         </CardContent>
       </Card>

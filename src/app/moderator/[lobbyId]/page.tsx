@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { doc, onSnapshot, collection, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { doc, onSnapshot, collection, deleteDoc, updateDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -99,14 +99,14 @@ export default function ModeratorLobbyPage() {
     try {
       const batch = writeBatch(db);
 
+      // Delete all players in the subcollection
       const playersColRef = collection(db, 'lobbies', lobbyId, 'players');
-      const playersSnapshot = await onSnapshot(playersColRef, (snapshot) => {
-        snapshot.docs.forEach((playerDoc) => {
-            batch.delete(playerDoc.ref);
-        });
+      const playersSnapshot = await getDocs(playersColRef);
+      playersSnapshot.docs.forEach((playerDoc) => {
+          batch.delete(playerDoc.ref);
       });
-      // playersSnapshot(); // Detach listener
       
+      // Delete the lobby document itself
       const lobbyDocRef = doc(db, 'lobbies', lobbyId);
       batch.delete(lobbyDocRef);
       
