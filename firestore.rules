@@ -5,8 +5,13 @@ service cloud.firestore {
     match /lobbies/{lobbyId} {
       allow read, write: if true;
 
-      // Allow access to subcollections
-      match /{subcollection}/{documentId} {
+      // Allow access to the 'players' subcollection
+      match /players/{playerId} {
+        allow read, write: if true;
+      }
+
+      // Allow access to the 'answers' subcollection
+      match /answers/{answerId} {
         allow read, write: if true;
       }
     }

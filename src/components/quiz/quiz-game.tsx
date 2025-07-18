@@ -6,10 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import type { Quiz, QuizQuestion, GameState } from '@/types/quiz';
+import type { Quiz, QuizQuestion, GameState, PlayerState } from '@/types/quiz';
 import { QuizResults } from './quiz-results';
 import { db } from '@/lib/firebase';
-import { doc, setDoc, updateDoc, collection, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, collection, onSnapshot, getDocs, writeBatch, getDoc, runTransaction } from 'firebase/firestore';
 
 interface QuizGameProps {
   lobbyId: string;
@@ -22,33 +22,35 @@ interface QuizGameProps {
 }
 
 const QUESTION_TIME = 15; // default seconds
+const STREAK_BONUS_THRESHOLD = 3;
+const BASE_POINTS = 10;
+const STREAK_BONUS_POINTS = 5;
 
 export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId, playerName, gameState }: QuizGameProps) {
-  const [score, setScore] = useState(0); // This will be calculated from Firestore later
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(timer);
   const [playerCount, setPlayerCount] = useState(0);
+  const [score, setScore] = useState(0); // Used for final results screen
 
   const { currentQuestionIndex, phase } = gameState;
   const currentQuestion: QuizQuestion | undefined = quiz[currentQuestionIndex];
   const isAnswerPhase = phase === 'question';
-  
+
   const submitAnswer = useCallback(async (answer: string) => {
-    if (!playerName || !isAnswerPhase) return;
+    if (!playerName || !isAnswerPhase || !currentQuestion) return;
 
     const answerRef = doc(db, 'lobbies', lobbyId, 'answers', `${currentQuestionIndex}-${playerName}`);
     try {
-        await setDoc(answerRef, {
-          playerName,
-          answer: answer,
-          questionIndex: currentQuestionIndex,
-          isCorrect: answer === currentQuestion?.answer,
-          timestamp: new Date(),
-        });
-    } catch(e) {
-        console.error("Failed to submit answer:", e);
+      await setDoc(answerRef, {
+        playerName,
+        answer: answer,
+        questionIndex: currentQuestionIndex,
+        isCorrect: answer === currentQuestion.answer,
+        timestamp: new Date(),
+      }, { merge: true });
+    } catch (e) {
+      console.error("Failed to submit answer:", e);
     }
-
   }, [lobbyId, playerName, currentQuestionIndex, currentQuestion, isAnswerPhase]);
 
   const handleAnswerSelect = (option: string) => {
@@ -62,7 +64,7 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
   useEffect(() => {
     const playersColRef = collection(db, 'lobbies', lobbyId, 'players');
     const unsubscribe = onSnapshot(playersColRef, (snapshot) => {
-        setPlayerCount(snapshot.size);
+      setPlayerCount(snapshot.size);
     });
     return () => unsubscribe();
   }, [lobbyId]);
@@ -73,41 +75,100 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
 
     const answersColRef = collection(db, 'lobbies', lobbyId, 'answers');
     const unsubscribe = onSnapshot(answersColRef, async (snapshot) => {
-        const currentQuestionAnswers = snapshot.docs.filter(doc => doc.data().questionIndex === currentQuestionIndex);
-        if (currentQuestionAnswers.length >= playerCount) {
-            const lobbyDocRef = doc(db, 'lobbies', lobbyId);
-            const currentPhase = (await doc(lobbyDocRef).get()).data()?.gameState.phase;
-            if(currentPhase === 'question') {
-                 await updateDoc(lobbyDocRef, {
-                    'gameState.phase': 'reveal',
-                });
-            }
+      const currentQuestionAnswers = snapshot.docs.filter(doc => doc.data().questionIndex === currentQuestionIndex);
+      if (currentQuestionAnswers.length >= playerCount) {
+        const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+        const lobbySnap = await getDoc(lobbyDocRef);
+        if (lobbySnap.exists() && lobbySnap.data().gameState.phase === 'question') {
+          await updateDoc(lobbyDocRef, {
+            'gameState.phase': 'reveal',
+          });
         }
+      }
     });
 
     return () => unsubscribe();
 
   }, [isAnswerPhase, lobbyId, currentQuestionIndex, playerCount]);
 
+  // Score calculation effect
+  useEffect(() => {
+      if (phase !== 'reveal') return;
+
+      const calculateScores = async () => {
+          const answersQuerySnapshot = await getDocs(collection(db, 'lobbies', lobbyId, 'answers'));
+          const currentAnswers = answersQuerySnapshot.docs
+              .map(doc => ({ id: doc.id, ...doc.data() }))
+              .filter(a => a.questionIndex === currentQuestionIndex);
+
+          if (currentAnswers.length === 0) return; // No answers to process
+
+          try {
+              await runTransaction(db, async (transaction) => {
+                  for (const answer of currentAnswers) {
+                      const playerDocRef = doc(db, 'lobbies', lobbyId, 'players', answer.playerName);
+                      const playerDoc = await transaction.get(playerDocRef);
+
+                      if (!playerDoc.exists()) continue;
+
+                      const playerData = playerDoc.data() as PlayerState;
+                      let newScore = playerData.score;
+                      let newStreak = playerData.streak;
+
+                      if (answer.isCorrect) {
+                          newStreak += 1;
+                          let pointsGained = BASE_POINTS;
+                          if (newStreak >= STREAK_BONUS_THRESHOLD) {
+                              pointsGained += STREAK_BONUS_POINTS;
+                          }
+                          newScore += pointsGained;
+                      } else {
+                          newStreak = 0;
+                      }
+                      transaction.update(playerDocRef, { score: newScore, streak: newStreak });
+                  }
+              });
+
+              // Update local score for final results display if current player is involved
+              if(playerName) {
+                  const playerDocRef = doc(db, 'lobbies', lobbyId, 'players', playerName);
+                  const finalPlayerDoc = await getDoc(playerDocRef);
+                  if(finalPlayerDoc.exists()) {
+                      setScore(finalPlayerDoc.data().score);
+                  }
+              }
+
+          } catch (error) {
+              console.error("Transaction failed: ", error);
+          }
+      };
+
+      calculateScores();
+
+  }, [phase, currentQuestionIndex, lobbyId, playerName]);
+
 
   useEffect(() => {
-    // Reset for new question
     setSelectedAnswer(null);
     setTimeLeft(timer);
   }, [currentQuestionIndex, timer]);
-  
+
   // Timer countdown effect
   useEffect(() => {
-    if (!isAnswerPhase || timeLeft <= 0) {
-      if(isAnswerPhase && timeLeft <= 0){
-        const lobbyDocRef = doc(db, 'lobbies', lobbyId);
-        updateDoc(lobbyDocRef, {
-            'gameState.phase': 'reveal',
-        });
-      }
+    if (!isAnswerPhase) return;
+
+    if (timeLeft <= 0) {
+      const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+      getDoc(lobbyDocRef).then(lobbySnap => {
+          if (lobbySnap.exists() && lobbySnap.data().gameState.phase === 'question') {
+             updateDoc(lobbyDocRef, {
+                'gameState.phase': 'reveal',
+            });
+          }
+      });
       return;
-    };
-    
+    }
+
     const timerId = setInterval(() => {
       setTimeLeft((t) => t - 1);
     }, 1000);
@@ -117,7 +178,20 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
 
 
   if (!currentQuestion) {
-     return <QuizResults score={score} total={quiz.length} onRestart={onFinish} />;
+    // Attempt to fetch final score for results screen
+    useEffect(() => {
+      const fetchFinalScore = async () => {
+        if(playerName) {
+          const playerDocRef = doc(db, 'lobbies', lobbyId, 'players', playerName);
+          const docSnap = await getDoc(playerDocRef);
+          if (docSnap.exists()) {
+            setScore(docSnap.data().score);
+          }
+        }
+      }
+      fetchFinalScore();
+    }, [lobbyId, playerName]);
+    return <QuizResults score={score} total={quiz.length * BASE_POINTS} onRestart={onFinish} />;
   }
 
   const getButtonClass = (option: string) => {
@@ -162,9 +236,9 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
             </Button>
           ))}
         </div>
-         <div className="text-center text-foreground/60 h-6">
-            { isAnswerPhase && !!selectedAnswer && <p>Réponse sélectionnée. Vous pouvez changer tant que le temps n'est pas écoulé.</p>}
-            { !isAnswerPhase && <p>Les réponses sont verrouillées. En attente de l'hôte...</p>}
+        <div className="text-center text-foreground/60 h-6">
+          {isAnswerPhase && !!selectedAnswer && <p>Réponse sélectionnée. Vous pouvez changer tant que le temps n'est pas écoulé.</p>}
+          {!isAnswerPhase && <p>Les réponses sont verrouillées. En attente de l'hôte...</p>}
         </div>
       </CardContent>
     </Card>
