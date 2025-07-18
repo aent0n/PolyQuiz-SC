@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { doc, onSnapshot, updateDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Loader2, ShieldCheck, XCircle, Flame, Star } from 'lucide-react';
+import { Loader2, ShieldCheck, XCircle, Flame, Star, ChevronsRight } from 'lucide-react';
 import type { GameState, LobbyData, PlayerState } from '@/types/quiz';
 import { QuizGame } from '../quiz/quiz-game';
 import { Button } from '../ui/button';
@@ -29,6 +29,7 @@ function HostControls({ lobbyId, currentQuestionIndex, quizLength }: { lobbyId: 
     if (nextIndex >= quizLength) {
       await updateDoc(lobbyDocRef, {
         'gameState.phase': 'finished',
+        status: 'finished',
       });
     } else {
       await updateDoc(lobbyDocRef, {
@@ -37,18 +38,8 @@ function HostControls({ lobbyId, currentQuestionIndex, quizLength }: { lobbyId: 
       });
     }
   };
-  
-  const handleRevealAnswer = async () => {
-    const lobbyDocRef = doc(db, 'lobbies', lobbyId);
-    await updateDoc(lobbyDocRef, {
-      'gameState.phase': 'reveal',
-      // Trigger for cloud function will be handled separately if needed
-      // or we can add a specific field to trigger it.
-    });
-  };
 
   const handleNullifyQuestion = async () => {
-    // This simply moves to the next question without scoring.
     console.log(`Question ${currentQuestionIndex} annulée.`);
     await handleNextQuestion();
   };
@@ -59,9 +50,9 @@ function HostControls({ lobbyId, currentQuestionIndex, quizLength }: { lobbyId: 
         <CardTitle className="text-center">Contrôles de l'Hôte</CardTitle>
       </CardHeader>
       <CardContent className="flex justify-center gap-4">
-        <Button onClick={handleRevealAnswer} size="lg">
-            <ShieldCheck className="mr-2 h-5 w-5" />
-            Révéler la réponse
+        <Button onClick={handleNextQuestion} size="lg">
+            <ChevronsRight className="mr-2 h-5 w-5" />
+            Question Suivante
         </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
