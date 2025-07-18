@@ -44,11 +44,11 @@ function PlayerList({ players }: { players: Player[] }) {
 }
 
 export default function ModeratorLobbyPage({ params }: { params: { lobbyId: string } }) {
+  const { lobbyId } = params;
   const [lobbyData, setLobbyData] = useState<LobbyData | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { lobbyId } = params;
   const router = useRouter();
   const [joinUrl, setJoinUrl] = useState('');
 
@@ -94,6 +94,7 @@ export default function ModeratorLobbyPage({ params }: { params: { lobbyId: stri
   }, [lobbyId, router]);
 
   const handleCloseLobby = async () => {
+    if (!lobbyId) return;
     try {
       const lobbyDocRef = doc(db, 'lobbies', lobbyId);
       await deleteDoc(lobbyDocRef);
@@ -105,6 +106,7 @@ export default function ModeratorLobbyPage({ params }: { params: { lobbyId: stri
   };
 
   const handleStartGame = async () => {
+    if (!lobbyId) return;
     try {
       const lobbyDocRef = doc(db, 'lobbies', lobbyId);
       await updateDoc(lobbyDocRef, {
