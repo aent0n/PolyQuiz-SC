@@ -54,7 +54,7 @@ export function QuizSetupForm({ onSubmit, isLoading }: QuizSetupFormProps) {
   return (
     <Card className="border-primary/20 shadow-lg shadow-primary/10">
       <CardHeader className="text-center">
-        <CardTitle className="text-4xl md:text-5xl font-bold tracking-wider text-primary">POLYQUIZ</CardTitle>
+        <CardTitle className="text-4xl md:text-5xl font-headline font-bold tracking-wider text-primary">POLYQUIZ</CardTitle>
         <CardDescription className="text-foreground/80 pt-2">
           Test your knowledge of the Star Citizen universe.
         </CardDescription>

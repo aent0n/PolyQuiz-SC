@@ -1,13 +1,18 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import { Orbitron } from 'next/font/google';
+import { Orbitron, Inter } from 'next/font/google';
 
 const orbitron = Orbitron({
   subsets: ['latin'],
   variable: '--font-orbitron',
+  weight: ['400', '700'],
 });
 
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
   title: 'PolyQuiz',
@@ -20,8 +25,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`dark ${orbitron.variable}`}>
-      <body className="antialiased">
+    <html lang="en" className={`dark ${orbitron.variable} ${inter.variable}`}>
+      <body className="antialiased font-sans">
         {children}
         <Toaster />
       </body>

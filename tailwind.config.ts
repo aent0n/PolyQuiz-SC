@@ -17,7 +17,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-orbitron)"],
+        sans: ["var(--font-inter)"],
         headline: ["var(--font-orbitron)"],
       },
       colors: {
