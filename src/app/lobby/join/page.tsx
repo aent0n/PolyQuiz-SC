@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { doc, getDoc } from 'firebase/firestore';
@@ -13,16 +14,17 @@ import { db } from '@/lib/firebase';
 
 export default function JoinLobbyPage() {
   const [lobbyCode, setLobbyCode] = useState('');
+  const [playerName, setPlayerName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
   const handleJoinLobby = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!lobbyCode.trim()) {
+    if (!lobbyCode.trim() || !playerName.trim()) {
       toast({
-        title: 'Code de salon invalide',
-        description: 'Veuillez entrer un code de salon.',
+        title: 'Champs requis',
+        description: 'Veuillez entrer un code de salon et votre nom de joueur.',
         variant: 'destructive',
       });
       return;
@@ -38,8 +40,8 @@ export default function JoinLobbyPage() {
           title: 'Salon trouvé !',
           description: 'Vous allez être redirigé...',
         });
-        // Rediriger vers la page du joueur
-        router.push(`/player/${lobbyCode.toUpperCase()}`);
+        // Rediriger vers la page du joueur avec le nom en paramètre de requête
+        router.push(`/player/${lobbyCode.toUpperCase()}?playerName=${encodeURIComponent(playerName)}`);
       } else {
         toast({
           title: 'Salon introuvable',
@@ -67,20 +69,34 @@ export default function JoinLobbyPage() {
           <CardHeader>
             <CardTitle className="text-center text-3xl font-headline text-primary">Rejoindre un Salon</CardTitle>
             <CardDescription className="text-center text-foreground/80 pt-2">
-              Entrez le code du salon pour participer au quiz.
+              Entrez le code du salon et votre nom pour participer.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleJoinLobby} className="space-y-4">
-              <Input
-                value={lobbyCode}
-                onChange={(e) => setLobbyCode(e.target.value)}
-                placeholder="Entrez le code du salon"
-                className="text-center text-lg tracking-widest"
-                maxLength={6}
-                autoCapitalize="characters"
-              />
-              <Button type="submit" className="w-full text-lg py-6" disabled={isLoading}>
+               <div>
+                <Label htmlFor="lobby-code">Code du Salon</Label>
+                <Input
+                  id="lobby-code"
+                  value={lobbyCode}
+                  onChange={(e) => setLobbyCode(e.target.value)}
+                  placeholder="CODE"
+                  className="text-center text-lg tracking-widest"
+                  maxLength={6}
+                  autoCapitalize="characters"
+                />
+              </div>
+              <div>
+                <Label htmlFor="player-name">Votre Nom</Label>
+                <Input
+                  id="player-name"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder="Nom du joueur"
+                  className="text-center text-lg"
+                />
+              </div>
+              <Button type="submit" className="w-full text-lg py-6" disabled={isLoading || !lobbyCode.trim() || !playerName.trim()}>
                 {isLoading ? (
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 ) : (

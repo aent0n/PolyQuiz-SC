@@ -1,38 +1,33 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Input } from '@/components/ui/input';
 
-// Types pour être plus explicite
 interface LobbyData {
   topic: string;
-  // autres champs...
 }
 
-interface PlayerData {
-  name: string;
-  score: number;
-}
+function PlayerLobbyContent() {
+  const { lobbyId } = use(useParams());
+  const searchParams = useSearchParams();
+  const playerName = searchParams.get('playerName') || 'Joueur Anonyme';
 
-export default function PlayerLobbyPage({ params }: { params: Promise<{ lobbyId: string }> }) {
-  const { lobbyId } = use(params);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lobbyData, setLobbyData] = useState<LobbyData | null>(null);
-  const [playerName, setPlayerName] = useState('');
-  const [isRegistered, setIsRegistered] = useState(false);
 
   useEffect(() => {
     if (!lobbyId) return;
 
-    const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+    // TODO: Enregistrer le joueur dans la sous-collection 'players' du salon
 
+    const lobbyDocRef = doc(db, 'lobbies', lobbyId);
     const unsubscribe = onSnapshot(lobbyDocRef, (docSnap) => {
       if (docSnap.exists()) {
         setLobbyData(docSnap.data() as LobbyData);
@@ -49,16 +44,7 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ lobbyId:
     });
 
     return () => unsubscribe();
-  }, [lobbyId]);
-
-  const handleRegister = () => {
-    if (playerName.trim()) {
-      // TODO: Ajouter la logique pour enregistrer le joueur dans Firestore
-      console.log(`Le joueur ${playerName} rejoint le salon ${lobbyId}`);
-      setIsRegistered(true);
-    }
-  };
-
+  }, [lobbyId, playerName]);
 
   if (loading) {
     return (
@@ -98,26 +84,38 @@ export default function PlayerLobbyPage({ params }: { params: Promise<{ lobbyId:
           </CardDescription>
         </CardHeader>
         <CardContent>
-        {isRegistered ? (
-             <div className="text-center">
-                <p className="text-xl font-bold">Bienvenue, {playerName} !</p>
-                <p className="text-lg text-foreground/80 mt-2">En attente du lancement de la partie par l'hôte...</p>
-                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mt-4" />
-            </div>
-        ) : (
-            <div className="space-y-4">
-                <Input 
-                    placeholder="Entrez votre nom de joueur" 
-                    value={playerName} 
-                    onChange={(e) => setPlayerName(e.target.value)}
-                />
-                <Button onClick={handleRegister} className="w-full" disabled={!playerName.trim()}>
-                    Rejoindre la partie
-                </Button>
-            </div>
-        )}
+          <div className="text-center">
+              <p className="text-xl font-bold">Bienvenue, {playerName} !</p>
+              <p className="text-lg text-foreground/80 mt-2">En attente du lancement de la partie par l'hôte...</p>
+              <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mt-4" />
+          </div>
         </CardContent>
       </Card>
     </main>
+  );
+}
+
+// HACK: Next.js App Router et Suspense ne fonctionnent pas toujours bien ensemble.
+// Il faut utiliser un composant wrapper avec <Suspense> pour que `useSearchParams` fonctionne.
+function useParams() {
+    const [params, setParams] = useState<{ lobbyId: string } | null>(null);
+    useEffect(() => {
+        const pathParts = window.location.pathname.split('/');
+        const lobbyId = pathParts[pathParts.length - 1];
+        setParams({ lobbyId });
+    }, []);
+    return params || { lobbyId: '' };
+}
+
+
+export default function PlayerLobbyPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    }>
+      <PlayerLobbyContent />
+    </Suspense>
   );
 }
