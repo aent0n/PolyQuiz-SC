@@ -21,10 +21,10 @@ export default function CreateLobbyPage() {
         topic: data.topic,
         numQuestions: data.numQuestions
       });
-      const cleanedJsonString = result.quiz.replace(/```json/g, '').replace(/```/g, '').trim();
-      const parsedQuiz: { quiz: Quiz } = JSON.parse(cleanedJsonString);
+
+      const generatedQuiz: Quiz = result.quiz;
       
-      console.log('Quiz généré pour le salon:', parsedQuiz.quiz);
+      console.log('Quiz généré pour le salon:', generatedQuiz);
       console.log('Timer par question:', data.timer);
 
 
@@ -51,7 +51,7 @@ export default function CreateLobbyPage() {
       <div className="z-10 w-full max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
         <Card className="border-primary/20 shadow-lg shadow-primary/10">
           <CardHeader>
-            <CardTitle className="text-center text-3xl text-primary font-headline">Créer un Salon</CardTitle>
+            <CardTitle className="text-center text-3xl font-headline text-primary">Créer un Salon</CardTitle>
             <CardDescription className="text-center text-foreground/80 pt-2">
               Configurez votre quiz et invitez des joueurs à vous rejoindre.
             </CardDescription>

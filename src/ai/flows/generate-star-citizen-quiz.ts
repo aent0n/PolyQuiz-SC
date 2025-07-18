@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import type { Quiz } from '@/types/quiz';
 
 const GenerateStarCitizenQuizInputSchema = z.object({
   topic: z
@@ -21,8 +22,14 @@ export type GenerateStarCitizenQuizInput = z.infer<
   typeof GenerateStarCitizenQuizInputSchema
 >;
 
+const questionSchema = z.object({
+  question: z.string().describe('The question text'),
+  options: z.array(z.string()).describe('An array of 4 possible answers.'),
+  answer: z.string().describe('The correct answer, which must be one of the options.'),
+});
+
 const GenerateStarCitizenQuizOutputSchema = z.object({
-  quiz: z.string().describe('The generated Star Citizen quiz in JSON format.'),
+  quiz: z.array(questionSchema).describe('The array of quiz questions.'),
 });
 export type GenerateStarCitizenQuizOutput = z.infer<
   typeof GenerateStarCitizenQuizOutputSchema
@@ -41,21 +48,8 @@ const generateStarCitizenQuizPrompt = ai.definePrompt({
   prompt: `You are an expert quiz generator specializing in Star Citizen trivia.
 
   Generate a quiz with {{numQuestions}} questions about {{topic}}.
-  The quiz should be returned in JSON format with the following structure:
-  {
-    "quiz": [
-      {
-        "question": "The question text",
-        "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
-        "answer": "The correct answer"
-      },
-      ...
-    ]
-  }
-  Ensure that the answer is one of the options provided. Do not include any explanation or context other than the JSON structure.
-  Do not provide any intro or conclusion in the response. Start with the JSON object.
-  Do not include any invalid JSON escape sequences.
-  Do not provide more than 4 options for each question.`,
+  Ensure that the answer is one of the 4 options provided.
+  `,
 });
 
 const generateStarCitizenQuizFlow = ai.defineFlow(

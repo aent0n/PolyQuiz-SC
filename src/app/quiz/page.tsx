@@ -23,10 +23,7 @@ export default function QuizPage() {
         topic: data.topic,
         numQuestions: data.numQuestions,
       });
-      // The AI sometimes returns a malformed JSON string with backticks and "json" prefix.
-      const cleanedJsonString = result.quiz.replace(/```json/g, '').replace(/```/g, '').trim();
-      const parsedQuiz = JSON.parse(cleanedJsonString);
-      setQuiz(parsedQuiz.quiz);
+      setQuiz(result.quiz);
     } catch (error) {
       console.error(error);
       toast({
