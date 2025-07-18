@@ -10,8 +10,8 @@ export default function Home() {
       </div>
 
        <footer className="z-10 mt-8 text-center text-sm text-foreground/50">
-        <p>PolyQuiz - A Star Citizen Adventure</p>
-        <p>Not affiliated with Cloud Imperium Games.</p>
+        <p>PolyQuiz - Une aventure Star Citizen</p>
+        <p>Non affilié à Cloud Imperium Games.</p>
       </footer>
     </main>
   );

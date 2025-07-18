@@ -9,14 +9,14 @@ export default function CreateLobbyPage() {
       <div className="w-full max-w-md">
         <Card className="border-primary/20 shadow-lg shadow-primary/10">
           <CardHeader>
-            <CardTitle className="text-center text-3xl text-primary">Create Lobby</CardTitle>
+            <CardTitle className="text-center text-3xl text-primary">Créer un Salon</CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-foreground/80 mb-6">This is where the lobby creation form will go.</p>
+            <p className="text-foreground/80 mb-6">Le formulaire de création de salon se trouvera ici.</p>
             <Link href="/" passHref>
               <Button variant="outline">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Home
+                Retour à l'accueil
               </Button>
             </Link>
           </CardContent>

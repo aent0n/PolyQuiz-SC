@@ -13,23 +13,28 @@ export function HomePage() {
           POLYQUIZ
         </CardTitle>
         <CardDescription className="text-foreground/80 pt-2 text-lg">
-          A futuristic quiz game for Star Citizen fans.
+          Un jeu de quiz futuriste pour les fans de Star Citizen.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col items-center space-y-4 pt-6">
         <Link href="/lobby/create" passHref className="w-full max-w-sm">
           <Button className="w-full text-lg py-6" variant="default">
-            <PlusCircle className="mr-2" /> Create Lobby
+            <PlusCircle className="mr-2" /> Créer un Salon
           </Button>
         </Link>
         <Link href="/lobby/join" passHref className="w-full max-w-sm">
           <Button className="w-full text-lg py-6" variant="secondary">
-            <LogIn className="mr-2" /> Join Lobby
+            <LogIn className="mr-2" /> Rejoindre un Salon
           </Button>
         </Link>
         <Link href="/moderator" passHref className="w-full max-w-sm">
            <Button className="w-full text-lg py-6" variant="outline">
-            <Shield className="mr-2" /> Moderator View
+            <Shield className="mr-2" /> Vue Modérateur
+          </Button>
+        </Link>
+         <Link href="/quiz" passHref className="w-full max-w-sm">
+           <Button className="w-full text-lg py-6" variant="ghost">
+            Jeu Solo
           </Button>
         </Link>
       </CardContent>

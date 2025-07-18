@@ -9,14 +9,14 @@ export default function ModeratorPage() {
       <div className="w-full max-w-md">
         <Card className="border-primary/20 shadow-lg shadow-primary/10">
           <CardHeader>
-            <CardTitle className="text-center text-3xl text-primary">Moderator View</CardTitle>
+            <CardTitle className="text-center text-3xl text-primary">Vue Modérateur</CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-foreground/80 mb-6">This is where the moderator dashboard will be.</p>
+            <p className="text-foreground/80 mb-6">Le tableau de bord du modérateur se trouvera ici.</p>
             <Link href="/" passHref>
               <Button variant="outline">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Home
+                Retour à l'accueil
               </Button>
             </Link>
           </CardContent>

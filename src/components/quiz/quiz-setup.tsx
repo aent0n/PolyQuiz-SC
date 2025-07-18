@@ -31,10 +31,10 @@ type QuizSetupFormValues = z.infer<typeof formSchema>;
 
 const topics = [
   { value: 'lore', label: 'Lore' },
-  { value: 'locations', label: 'Points of Interest' },
-  { value: 'resources', label: 'Resources' },
-  { value: 'ships', label: 'Ships' },
-  { value: 'organizations', label: 'Organizations' },
+  { value: 'locations', label: 'Lieux d\'intérêt' },
+  { value: 'resources', label: 'Ressources' },
+  { value: 'ships', label: 'Vaisseaux' },
+  { value: 'organizations', label: 'Organisations' },
 ];
 
 interface QuizSetupFormProps {
@@ -56,7 +56,7 @@ export function QuizSetupForm({ onSubmit, isLoading }: QuizSetupFormProps) {
       <CardHeader className="text-center">
         <CardTitle className="text-4xl md:text-5xl font-headline font-bold tracking-wider text-primary">POLYQUIZ</CardTitle>
         <CardDescription className="text-foreground/80 pt-2">
-          Test your knowledge of the Star Citizen universe.
+          Testez vos connaissances de l'univers de Star Citizen.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -67,11 +67,11 @@ export function QuizSetupForm({ onSubmit, isLoading }: QuizSetupFormProps) {
               name="topic"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Topic</FormLabel>
+                  <FormLabel>Sujet</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a topic" />
+                        <SelectValue placeholder="Sélectionnez un sujet" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -91,11 +91,11 @@ export function QuizSetupForm({ onSubmit, isLoading }: QuizSetupFormProps) {
               name="numQuestions"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Number of Questions</FormLabel>
+                  <FormLabel>Nombre de questions</FormLabel>
                   <Select onValueChange={(value) => field.onChange(Number(value))} defaultValue={String(field.value)}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select number of questions" />
+                        <SelectValue placeholder="Sélectionnez le nombre de questions" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -114,12 +114,12 @@ export function QuizSetupForm({ onSubmit, isLoading }: QuizSetupFormProps) {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Generating Quiz...
+                  Génération du quiz...
                 </>
               ) : (
                 <>
                   <Rocket className="mr-2 h-5 w-5" />
-                  Start Quiz
+                  Démarrer le quiz
                 </>
               )}
             </Button>

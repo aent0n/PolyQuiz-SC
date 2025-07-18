@@ -17,28 +17,28 @@ export function QuizResults({ score, total, onRestart }: QuizResultsProps) {
   const feedback = useMemo(() => {
     if (percentage === 100) {
       return {
-        title: 'Perfect Score!',
-        message: 'You\'re a true Star Citizen loremaster!',
+        title: 'Score Parfait !',
+        message: 'Vous êtes un véritable maître du lore de Star Citizen !',
         icon: <Award className="h-16 w-16 text-yellow-400" />,
       };
     }
     if (percentage >= 70) {
       return {
-        title: 'Excellent!',
-        message: 'Your knowledge of the verse is impressive.',
+        title: 'Excellent !',
+        message: 'Votre connaissance de l\'univers est impressionnante.',
         icon: <TrendingUp className="h-16 w-16 text-green-500" />,
       };
     }
     if (percentage >= 40) {
       return {
-        title: 'Not Bad!',
-        message: 'You know your way around, but there\'s always more to learn.',
+        title: 'Pas mal !',
+        message: 'Vous vous y connaissez, mais il y a toujours plus à apprendre.',
         icon: <Award className="h-16 w-16 text-blue-400" />,
       };
     }
     return {
-      title: 'Keep Exploring!',
-      message: 'The verse is vast and full of knowledge. Don\'t give up!',
+      title: 'Continuez à explorer !',
+      message: 'L\'univers est vaste et plein de connaissances. N\'abandonnez pas !',
       icon: <TrendingDown className="h-16 w-16 text-red-500" />,
     };
   }, [percentage]);
@@ -54,13 +54,13 @@ export function QuizResults({ score, total, onRestart }: QuizResultsProps) {
           {feedback.icon}
         </div>
         <div className="text-center">
-            <p className="text-lg text-foreground/80">You Scored</p>
+            <p className="text-lg text-foreground/80">Votre Score</p>
             <p className="text-7xl font-bold text-primary">{score}<span className="text-3xl text-foreground/60">/{total}</span></p>
             <p className="text-2xl font-medium text-accent">{percentage}%</p>
         </div>
         <Button onClick={onRestart} className="w-full max-w-xs text-lg py-6">
           <RotateCw className="mr-2 h-5 w-5" />
-          Play Again
+          Rejouer
         </Button>
       </CardContent>
     </Card>

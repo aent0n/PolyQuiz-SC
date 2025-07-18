@@ -80,7 +80,7 @@ export function QuizGame({ quiz, topic, onFinish }: QuizGameProps) {
     <Card className="w-full border-primary/20 shadow-lg shadow-primary/10">
       <CardHeader>
         <div className="flex justify-between items-center text-foreground/80">
-          <span>Question {currentQuestionIndex + 1} of {quiz.length}</span>
+          <span>Question {currentQuestionIndex + 1} sur {quiz.length}</span>
           <span className="capitalize">{topic}</span>
         </div>
         <Progress value={(timeLeft / QUESTION_TIME) * 100} className="w-full h-2 mt-2 [&>div]:bg-primary" />

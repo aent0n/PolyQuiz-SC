@@ -16,7 +16,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: 'PolyQuiz',
-  description: 'A futuristic quiz game for Star Citizen fans.',
+  description: 'Un jeu de quiz futuriste pour les fans de Star Citizen.',
 };
 
 export default function RootLayout({
@@ -25,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`dark ${orbitron.variable} ${inter.variable}`}>
+    <html lang="fr" className={`dark ${orbitron.variable} ${inter.variable}`}>
       <body className="antialiased font-sans">
         {children}
         <Toaster />

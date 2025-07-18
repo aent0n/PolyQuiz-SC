@@ -25,8 +25,8 @@ export default function QuizPage() {
     } catch (error) {
       console.error(error);
       toast({
-        title: "Error Generating Quiz",
-        description: "There was an issue creating your quiz. Please try again.",
+        title: "Erreur lors de la génération du quiz",
+        description: "Un problème est survenu lors de la création de votre quiz. Veuillez réessayer.",
         variant: "destructive",
       });
     } finally {
@@ -51,8 +51,8 @@ export default function QuizPage() {
       </div>
 
        <footer className="z-10 mt-8 text-center text-sm text-foreground/50">
-        <p>PolyQuiz - A Star Citizen Adventure</p>
-        <p>Not affiliated with Cloud Imperium Games.</p>
+        <p>PolyQuiz - Une aventure Star Citizen</p>
+        <p>Non affilié à Cloud Imperium Games.</p>
       </footer>
     </main>
   );

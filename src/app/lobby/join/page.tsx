@@ -9,14 +9,14 @@ export default function JoinLobbyPage() {
       <div className="w-full max-w-md">
         <Card className="border-primary/20 shadow-lg shadow-primary/10">
           <CardHeader>
-            <CardTitle className="text-center text-3xl text-primary">Join Lobby</CardTitle>
+            <CardTitle className="text-center text-3xl text-primary">Rejoindre un Salon</CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-foreground/80 mb-6">This is where players will enter a code to join a lobby.</p>
+            <p className="text-foreground/80 mb-6">C'est ici que les joueurs entreront un code pour rejoindre un salon.</p>
             <Link href="/" passHref>
               <Button variant="outline">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Home
+                Retour à l'accueil
               </Button>
             </Link>
           </CardContent>
