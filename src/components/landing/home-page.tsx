@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogIn, PlusCircle, Shield } from 'lucide-react';
+import { LogIn, PlusCircle, Shield, PenSquare } from 'lucide-react';
 
 export function HomePage() {
   return (
@@ -27,8 +27,13 @@ export function HomePage() {
             <LogIn className="mr-2" /> Rejoindre un Salon
           </Button>
         </Link>
-        <Link href="/moderator" passHref className="w-full max-w-sm">
+         <Link href="/quiz/creator" passHref className="w-full max-w-sm">
            <Button className="w-full text-lg py-6" variant="outline">
+            <PenSquare className="mr-2" /> Créer un Quiz
+          </Button>
+        </Link>
+        <Link href="/moderator" passHref className="w-full max-w-sm">
+           <Button className="w-full text-lg py-6" variant="ghost">
             <Shield className="mr-2" /> Vue Modérateur
           </Button>
         </Link>
