@@ -47,7 +47,6 @@ export default function CreateLobbyPage() {
       
       const batch = writeBatch(db);
       
-      // 1. Créer le document du salon
       const lobbyDocRef = doc(db, "lobbies", lobbyId);
       batch.set(lobbyDocRef, {
         quiz: generatedQuiz,
@@ -55,13 +54,17 @@ export default function CreateLobbyPage() {
         timer: data.timer,
         createdAt: new Date(),
         hostName: data.playerName,
+        status: 'waiting', // initial status
       });
 
-      // 2. Ajouter l'hôte comme premier joueur dans la sous-collection
       const playerDocRef = doc(collection(lobbyDocRef, 'players'), data.playerName);
-      batch.set(playerDocRef, { name: data.playerName, joinedAt: new Date() });
+      batch.set(playerDocRef, { 
+        name: data.playerName, 
+        joinedAt: new Date(),
+        score: 0,
+        streak: 0,
+      });
 
-      // Exécuter les opérations en une seule fois
       await batch.commit();
 
       console.log(`Salon ${lobbyId} créé avec le quiz et l'hôte ${data.playerName}:`, generatedQuiz);

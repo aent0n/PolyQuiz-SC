@@ -44,7 +44,12 @@ function PlayerLobbyContent() {
                 setLoading(false);
                 return;
             }
-            await setDoc(playerDocRef, { name: playerName, joinedAt: new Date() });
+            await setDoc(playerDocRef, { 
+                name: playerName, 
+                joinedAt: new Date(),
+                score: 0,
+                streak: 0,
+            });
             console.log(`Joueur ${playerName} enregistré dans le salon ${lobbyId}`);
         } catch (err) {
             console.error("Erreur lors de l'enregistrement du joueur:", err);

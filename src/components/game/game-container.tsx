@@ -3,10 +3,10 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Loader2, ShieldCheck, XCircle } from 'lucide-react';
-import type { GameState, LobbyData } from '@/types/quiz';
+import { Loader2, ShieldCheck, XCircle, Flame, Star } from 'lucide-react';
+import type { GameState, LobbyData, PlayerState } from '@/types/quiz';
 import { QuizGame } from '../quiz/quiz-game';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -37,6 +37,15 @@ function HostControls({ lobbyId, currentQuestionIndex, quizLength }: { lobbyId: 
       });
     }
   };
+  
+  const handleRevealAnswer = async () => {
+    const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+    await updateDoc(lobbyDocRef, {
+      'gameState.phase': 'reveal',
+      // Trigger for cloud function will be handled separately if needed
+      // or we can add a specific field to trigger it.
+    });
+  };
 
   const handleNullifyQuestion = async () => {
     // This simply moves to the next question without scoring.
@@ -50,9 +59,9 @@ function HostControls({ lobbyId, currentQuestionIndex, quizLength }: { lobbyId: 
         <CardTitle className="text-center">Contrôles de l'Hôte</CardTitle>
       </CardHeader>
       <CardContent className="flex justify-center gap-4">
-        <Button onClick={handleNextQuestion} size="lg">
-          <ShieldCheck className="mr-2 h-5 w-5" />
-          Question Suivante
+        <Button onClick={handleRevealAnswer} size="lg">
+            <ShieldCheck className="mr-2 h-5 w-5" />
+            Révéler la réponse
         </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
@@ -66,7 +75,7 @@ function HostControls({ lobbyId, currentQuestionIndex, quizLength }: { lobbyId: 
               <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
               <AlertDialogDescription>
                 Cette action annulera la question actuelle pour tous les joueurs.
-                Aucun point ne sera attribué et cela ne comptera pas comme une mauvaise réponse.
+                Aucun point ne sera attribué et vous passerez à la question suivante.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -80,6 +89,34 @@ function HostControls({ lobbyId, currentQuestionIndex, quizLength }: { lobbyId: 
   );
 }
 
+function PlayerHud({ playerState }: { playerState: PlayerState | null }) {
+    if (!playerState) return null;
+
+    return (
+        <div className="fixed top-4 right-4 z-50">
+            <Card className="bg-background/80 backdrop-blur-sm border-primary/30">
+                <CardContent className="p-3 flex items-center gap-4">
+                    <div className="text-center">
+                        <div className="flex items-center gap-2 text-2xl font-bold text-primary">
+                            <Star className="h-6 w-6" />
+                            <span>{playerState.score}</span>
+                        </div>
+                        <p className="text-xs text-foreground/70">Score</p>
+                    </div>
+                    {playerState.streak > 0 && (
+                         <div className="text-center">
+                            <div className="flex items-center gap-2 text-2xl font-bold text-yellow-400">
+                                <Flame className="h-6 w-6" />
+                                <span>{playerState.streak}</span>
+                            </div>
+                            <p className="text-xs text-foreground/70">Série</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+    )
+}
 
 export function GameContainer() {
     const params = useParams();
@@ -92,6 +129,7 @@ export function GameContainer() {
     const isHost = role === 'moderator';
 
     const [lobbyData, setLobbyData] = useState<LobbyData | null>(null);
+    const [playerState, setPlayerState] = useState<PlayerState | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -99,12 +137,11 @@ export function GameContainer() {
         if (!lobbyId) return;
 
         const lobbyDocRef = doc(db, 'lobbies', lobbyId);
-        const unsubscribe = onSnapshot(lobbyDocRef, (docSnap) => {
+        const unsubscribeLobby = onSnapshot(lobbyDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data() as LobbyData;
                 setLobbyData(data);
                 if (data.status === 'finished' || (data.gameState && data.gameState.phase === 'finished')) {
-                    // Redirect to results page later
                     router.push('/');
                 }
             } else {
@@ -118,8 +155,22 @@ export function GameContainer() {
             setLoading(false);
         });
 
-        return () => unsubscribe();
-    }, [lobbyId, router]);
+        let unsubscribePlayer: (() => void) | undefined;
+        if (playerName) {
+            const playerDocRef = doc(db, 'lobbies', lobbyId, 'players', playerName);
+            unsubscribePlayer = onSnapshot(playerDocRef, (docSnap) => {
+                if(docSnap.exists()){
+                    setPlayerState(docSnap.data() as PlayerState);
+                }
+            });
+        }
+
+
+        return () => {
+            unsubscribeLobby();
+            if (unsubscribePlayer) unsubscribePlayer();
+        }
+    }, [lobbyId, router, playerName]);
 
     const handleFinish = async () => {
       if (isHost) {
@@ -129,7 +180,6 @@ export function GameContainer() {
             status: 'finished',
         });
       }
-      // Players will be redirected by the listener
     }
 
     if (loading) {
@@ -152,6 +202,7 @@ export function GameContainer() {
 
     return (
         <div>
+            <PlayerHud playerState={playerState} />
             <QuizGame 
                 lobbyId={lobbyId}
                 playerName={playerName}

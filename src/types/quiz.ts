@@ -12,10 +12,17 @@ export interface GameState {
   phase: 'question' | 'reveal' | 'finished';
 }
 
+export interface PlayerState {
+  name: string;
+  score: number;
+  streak: number;
+}
+
 export interface LobbyData {
   topic: string;
   timer: number;
   quiz: Quiz;
   status: 'waiting' | 'playing' | 'finished';
   gameState: GameState;
+  players?: { [key: string]: PlayerState };
 }

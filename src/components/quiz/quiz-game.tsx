@@ -38,17 +38,32 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
     }
   }
   
-  // Submit answer to Firestore when timer ends or answer is locked
   const submitAnswer = useCallback(async () => {
-    if (!playerName || !selectedAnswer) return;
+    if (!playerName) return;
     const answerRef = doc(db, 'lobbies', lobbyId, 'answers', `${currentQuestionIndex}-${playerName}`);
     await setDoc(answerRef, {
       playerName,
       answer: selectedAnswer,
       questionIndex: currentQuestionIndex,
       isCorrect: selectedAnswer === currentQuestion?.answer,
+      timestamp: new Date(),
     });
+
+    if (selectedAnswer) {
+      // Lock answer visually immediately
+      const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+      // This update is mainly for UX, the "reveal" phase is controlled by host.
+      // We can add a "player locked" state if needed.
+    }
   }, [lobbyId, playerName, selectedAnswer, currentQuestionIndex, currentQuestion]);
+
+  // Submit answer when selected
+  useEffect(() => {
+    if(selectedAnswer){
+        submitAnswer();
+    }
+  }, [selectedAnswer, submitAnswer]);
+
 
   useEffect(() => {
     // Reset for new question
@@ -58,19 +73,11 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
   
   // Timer countdown effect
   useEffect(() => {
-    if (!isAnswerPhase) {
-      if(timeLeft > 0) setTimeLeft(0);
+    if (!isAnswerPhase || timeLeft === 0) {
+      if(timeLeft > 0 && !isAnswerPhase) setTimeLeft(0);
       return;
     };
     
-    if (timeLeft === 0) {
-      // Time's up, lock in the answer and tell the host to reveal
-      submitAnswer();
-      const lobbyDocRef = doc(db, 'lobbies', lobbyId);
-      updateDoc(lobbyDocRef, { 'gameState.phase': 'reveal' });
-      return;
-    }
-
     const timerId = setInterval(() => {
       setTimeLeft((t) => t - 1);
     }, 1000);
@@ -119,14 +126,15 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
                 "h-auto w-full justify-start p-4 text-left whitespace-normal text-base transition-all duration-300 border-2 border-transparent",
                 getButtonClass(option)
               )}
-              disabled={!isAnswerPhase}
+              disabled={!isAnswerPhase || !!selectedAnswer}
             >
               {option}
             </Button>
           ))}
         </div>
          <div className="text-center text-foreground/60 h-6">
-            {!isAnswerPhase && <p>Les réponses sont verrouillées. En attente de l'hôte...</p>}
+            { isAnswerPhase && !!selectedAnswer && <p>Réponse verrouillée. En attente des autres joueurs...</p>}
+            { !isAnswerPhase && <p>Les réponses sont verrouillées. En attente de l'hôte...</p>}
         </div>
       </CardContent>
     </Card>
