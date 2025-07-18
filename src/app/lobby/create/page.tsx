@@ -1,24 +1,66 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { QuizSetupForm } from '@/components/quiz/quiz-setup';
+import { generateStarCitizenQuiz, type GenerateStarCitizenQuizOutput } from '@/ai/flows/generate-star-citizen-quiz';
+import { useToast } from "@/hooks/use-toast";
+import type { Quiz } from '@/types/quiz';
 
 export default function CreateLobbyPage() {
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleCreateLobby = async (data: { topic: string, numQuestions: number }) => {
+    setIsLoading(true);
+    try {
+      const result: GenerateStarCitizenQuizOutput = await generateStarCitizenQuiz(data);
+      const cleanedJsonString = result.quiz.replace(/```json/g, '').replace(/```/g, '').trim();
+      const parsedQuiz: { quiz: Quiz } = JSON.parse(cleanedJsonString);
+      
+      console.log('Quiz généré pour le salon:', parsedQuiz.quiz);
+
+      toast({
+        title: "Salon créé avec succès!",
+        description: "Votre quiz a été généré. Redirection bientôt...",
+      });
+      // TODO: Redirect to moderator view with lobby ID and quiz data
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Erreur lors de la génération du quiz",
+        description: "Un problème est survenu lors de la création de votre quiz. Veuillez réessayer.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 bg-background">
-      <div className="w-full max-w-md">
+      <div className="absolute inset-0 -z-10 h-full w-full bg-background bg-[radial-gradient(theme(colors.accent/20%)_1px,transparent_1px)] [background-size:32px_32px]"></div>
+      <div className="z-10 w-full max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
         <Card className="border-primary/20 shadow-lg shadow-primary/10">
           <CardHeader>
-            <CardTitle className="text-center text-3xl text-primary">Créer un Salon</CardTitle>
+            <CardTitle className="text-center text-3xl text-primary font-headline">Créer un Salon</CardTitle>
+            <CardDescription className="text-center text-foreground/80 pt-2">
+              Configurez votre quiz et invitez des joueurs à vous rejoindre.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-foreground/80 mb-6">Le formulaire de création de salon se trouvera ici.</p>
-            <Link href="/" passHref>
-              <Button variant="outline">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Retour à l'accueil
-              </Button>
-            </Link>
+          <CardContent>
+            <QuizSetupForm onSubmit={handleCreateLobby} isLoading={isLoading} />
+            <div className="text-center mt-6">
+              <Link href="/" passHref>
+                <Button variant="outline">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Retour à l'accueil
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>
