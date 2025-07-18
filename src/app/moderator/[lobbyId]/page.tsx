@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, use } from 'react';
@@ -48,11 +49,12 @@ export default function ModeratorLobbyPage({ params }: { params: Promise<{ lobby
   useEffect(() => {
     if (!lobbyId) return;
 
+    // Listener for lobby data
     const lobbyDocRef = doc(db, 'lobbies', lobbyId);
-
     const unsubscribeLobby = onSnapshot(lobbyDocRef, (docSnap) => {
       if (docSnap.exists()) {
         setLobbyData(docSnap.data() as LobbyData);
+        setError(null);
       } else {
         setError('Le salon est introuvable ou a été supprimé.');
         setLobbyData(null);
@@ -64,18 +66,19 @@ export default function ModeratorLobbyPage({ params }: { params: Promise<{ lobby
       setLoading(false);
     });
 
+    // Listener for players
     const playersColRef = collection(db, 'lobbies', lobbyId, 'players');
     const unsubscribePlayers = onSnapshot(playersColRef, (snapshot) => {
       const playersList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Player));
       setPlayers(playersList);
     });
 
-    // La fonction de nettoyage sera exécutée lorsque le composant est démonté
+    // Cleanup function: this will be called when the component unmounts
     return () => {
       unsubscribeLobby();
       unsubscribePlayers();
 
-      // On supprime le salon lorsque l'hôte quitte la page
+      // Delete the lobby when the host leaves the page
       const deleteLobby = async () => {
         try {
           await deleteDoc(lobbyDocRef);
