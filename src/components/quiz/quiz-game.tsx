@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -70,16 +71,17 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME }: QuizG
   const getButtonClass = (option: string) => {
     if (!isAnswered) {
       return selectedAnswer === option
-        ? 'bg-accent/80 border-accent'
+        ? 'bg-primary/80 border-primary' // Highlight selected answer
         : 'bg-secondary/80';
     }
+    // After answer is revealed
     if (option === currentQuestion.answer) {
-      return 'bg-green-600 hover:bg-green-600 text-white';
+      return 'bg-green-600 hover:bg-green-600 text-white border-green-500'; // Correct answer
     }
     if (option === selectedAnswer) {
-      return 'bg-red-600 hover:bg-red-600 text-white';
+      return 'bg-red-600 hover:bg-red-600 text-white border-red-500'; // Wrong selected answer
     }
-    return 'bg-secondary/50 opacity-60';
+    return 'bg-secondary/50 opacity-60'; // Other incorrect options
   };
 
   return (

@@ -22,7 +22,6 @@ export function GameContainer() {
     const searchParams = useSearchParams();
     
     const lobbyId = Array.isArray(params.lobbyId) ? params.lobbyId[0] : params.lobbyId;
-    const role = searchParams.get('role');
     const playerName = searchParams.get('playerName');
 
     const [lobbyData, setLobbyData] = useState<LobbyData | null>(null);
@@ -76,16 +75,8 @@ export function GameContainer() {
         return <p className="text-destructive text-center text-lg">Données de la partie introuvables.</p>;
     }
 
-    if (role === 'moderator') {
-        return (
-            <div>
-                <h1 className="text-2xl font-bold text-center text-primary">Partie en cours</h1>
-                <p className="text-center">Vue du modérateur (à implémenter)</p>
-                <p className="text-center">Vous pouvez suivre les scores ici bientôt.</p>
-            </div>
-        );
-    }
-
+    // Both players and the moderator/host will play the game.
+    // A dedicated moderator view can be implemented later.
     return (
         <QuizGame 
             quiz={lobbyData.quiz}
