@@ -84,6 +84,8 @@ export function QuizSetupForm({ onSubmit, isLoading }: QuizSetupFormProps) {
       topic: 'lore',
       numQuestionsSelect: '5',
       timerSelect: '15',
+      numQuestionsCustom: undefined,
+      timerCustom: undefined,
     },
   });
 
@@ -171,7 +173,7 @@ export function QuizSetupForm({ onSubmit, isLoading }: QuizSetupFormProps) {
                   <FormItem>
                     <FormLabel>Nombre de questions personnalisé</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="Ex: 7" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} />
+                      <Input type="number" placeholder="Ex: 7" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -217,7 +219,7 @@ export function QuizSetupForm({ onSubmit, isLoading }: QuizSetupFormProps) {
                   <FormItem>
                     <FormLabel>Temps par question personnalisé (secondes)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="Ex: 25" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} />
+                      <Input type="number" placeholder="Ex: 25" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
