@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import type { Quiz, QuizQuestion, GameState } from '@/types/quiz';
 import { QuizResults } from './quiz-results';
 import { db } from '@/lib/firebase';
-import { doc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, collection, getDocs, onSnapshot } from 'firebase/firestore';
 
 interface QuizGameProps {
   lobbyId: string;
@@ -27,6 +27,7 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
   const [score, setScore] = useState(0); // This will be calculated from Firestore later
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(timer);
+  const [playerCount, setPlayerCount] = useState(0);
 
   const { currentQuestionIndex, phase } = gameState;
   const currentQuestion: QuizQuestion | undefined = quiz[currentQuestionIndex];
@@ -37,9 +38,20 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
       setSelectedAnswer(option);
     }
   }
+
+  // Effect to get player count
+  useEffect(() => {
+    const playersColRef = collection(db, 'lobbies', lobbyId, 'players');
+    const unsubscribe = onSnapshot(playersColRef, (snapshot) => {
+        setPlayerCount(snapshot.size);
+    });
+    return () => unsubscribe();
+  }, [lobbyId]);
   
   const submitAnswer = useCallback(async () => {
-    if (!playerName) return;
+    if (!playerName || !selectedAnswer) return;
+
+    const lobbyDocRef = doc(db, 'lobbies', lobbyId);
     const answerRef = doc(db, 'lobbies', lobbyId, 'answers', `${currentQuestionIndex}-${playerName}`);
     await setDoc(answerRef, {
       playerName,
@@ -49,13 +61,18 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
       timestamp: new Date(),
     });
 
-    if (selectedAnswer) {
-      // Lock answer visually immediately
-      const lobbyDocRef = doc(db, 'lobbies', lobbyId);
-      // This update is mainly for UX, the "reveal" phase is controlled by host.
-      // We can add a "player locked" state if needed.
+    // Check if all players have answered
+    const answersColRef = collection(db, 'lobbies', lobbyId, 'answers');
+    const answersSnapshot = await getDocs(answersColRef);
+    const currentQuestionAnswers = answersSnapshot.docs.filter(doc => doc.data().questionIndex === currentQuestionIndex);
+
+    if (currentQuestionAnswers.length === playerCount && playerCount > 0) {
+        await updateDoc(lobbyDocRef, {
+            'gameState.phase': 'reveal',
+        });
     }
-  }, [lobbyId, playerName, selectedAnswer, currentQuestionIndex, currentQuestion]);
+
+  }, [lobbyId, playerName, selectedAnswer, currentQuestionIndex, currentQuestion, playerCount]);
 
   // Submit answer when selected
   useEffect(() => {
@@ -73,8 +90,13 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
   
   // Timer countdown effect
   useEffect(() => {
-    if (!isAnswerPhase || timeLeft === 0) {
-      if(timeLeft > 0 && !isAnswerPhase) setTimeLeft(0);
+    if (!isAnswerPhase || timeLeft <= 0) {
+      if(isAnswerPhase && timeLeft <= 0){
+        const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+        updateDoc(lobbyDocRef, {
+            'gameState.phase': 'reveal',
+        });
+      }
       return;
     };
     
@@ -83,7 +105,7 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
     }, 1000);
 
     return () => clearInterval(timerId);
-  }, [timeLeft, isAnswerPhase, submitAnswer, lobbyId]);
+  }, [timeLeft, isAnswerPhase, lobbyId]);
 
 
   if (!currentQuestion) {
