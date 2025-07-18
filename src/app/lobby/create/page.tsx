@@ -10,6 +10,13 @@ import { QuizSetupForm, type QuizSetupFormValues } from '@/components/quiz/quiz-
 import { generateStarCitizenQuiz, type GenerateStarCitizenQuizOutput } from '@/ai/flows/generate-star-citizen-quiz';
 import { useToast } from "@/hooks/use-toast";
 import type { Quiz } from '@/types/quiz';
+import { db } from '@/lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+
+// Fonction pour générer un ID de salon simple
+const generateLobbyId = () => {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+};
 
 export default function CreateLobbyPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -25,23 +32,32 @@ export default function CreateLobbyPage() {
       });
 
       const generatedQuiz: Quiz = result.quiz;
+      const lobbyId = generateLobbyId();
       
-      console.log('Quiz généré pour le salon:', generatedQuiz);
-      console.log('Timer par question:', data.timer);
+      // Sauvegarder le salon dans Firestore
+      await setDoc(doc(db, "lobbies", lobbyId), {
+        quiz: generatedQuiz,
+        topic: data.topic,
+        timer: data.timer,
+        createdAt: new Date(),
+        // D'autres métadonnées peuvent être ajoutées ici
+      });
+
+      console.log(`Salon ${lobbyId} créé avec le quiz :`, generatedQuiz);
 
       toast({
         title: "Salon créé avec succès!",
-        description: "Votre quiz a été généré. Redirection en cours...",
+        description: `Le salon ${lobbyId} a été généré. Redirection en cours...`,
       });
-
-      // TODO: Pass quiz data and lobby ID to moderator page
-      router.push('/moderator');
+      
+      // Rediriger vers la page du modérateur avec l'ID du salon
+      router.push(`/moderator/${lobbyId}`);
 
     } catch (error) {
-      console.error(error);
+      console.error("Erreur détaillée :", error);
       toast({
-        title: "Erreur lors de la génération du quiz",
-        description: "Un problème est survenu lors de la création de votre quiz. Veuillez réessayer.",
+        title: "Erreur lors de la création du salon",
+        description: "Un problème est survenu. Veuillez consulter la console pour plus de détails et réessayer.",
         variant: "destructive",
       });
     } finally {

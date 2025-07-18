@@ -1,27 +1,22 @@
-import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+// This page is obsolete now that we use dynamic routes for moderator lobbies.
+// It can be removed or kept as a fallback. For now, we'll just make it redirect.
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 export default function ModeratorPage() {
+    const router = useRouter();
+
+    useEffect(() => {
+        router.replace('/');
+    }, [router]);
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 bg-background">
-      <div className="w-full max-w-md">
-        <Card className="border-primary/20 shadow-lg shadow-primary/10">
-          <CardHeader>
-            <CardTitle className="text-center text-3xl text-primary">Vue Modérateur</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-foreground/80 mb-6">Le tableau de bord du modérateur se trouvera ici.</p>
-            <Link href="/" passHref>
-              <Button variant="outline">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Retour à l'accueil
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="mt-4 text-lg text-foreground/80">Redirection...</p>
     </main>
   );
 }
