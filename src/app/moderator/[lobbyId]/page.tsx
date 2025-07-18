@@ -70,27 +70,20 @@ export default function ModeratorLobbyPage({ params }: { params: Promise<{ lobby
       setPlayers(playersList);
     });
 
+    // La fonction de nettoyage sera exécutée lorsque le composant est démonté
     return () => {
       unsubscribeLobby();
       unsubscribePlayers();
-      // La suppression se fera au démontage global du composant
-    };
-  }, [lobbyId]);
 
-   useEffect(() => {
-    // Fonction de nettoyage qui s'exécute lorsque le composant est démonté
-    return () => {
+      // On supprime le salon lorsque l'hôte quitte la page
       const deleteLobby = async () => {
         try {
-          const lobbyDocRef = doc(db, 'lobbies', lobbyId);
           await deleteDoc(lobbyDocRef);
           console.log(`Salon ${lobbyId} et ses joueurs ont été supprimés.`);
         } catch (error) {
           console.error("Erreur lors de la suppression du salon:", error);
         }
       };
-      
-      // On déclenche la suppression si on quitte la page
       deleteLobby();
     };
   }, [lobbyId]);
@@ -100,7 +93,7 @@ export default function ModeratorLobbyPage({ params }: { params: Promise<{ lobby
       <div className="w-full max-w-4xl">
         <Card className="border-primary/20 shadow-lg shadow-primary/10">
           <CardHeader>
-            <CardTitle className="text-center text-3xl text-primary">Salon du Modérateur</CardTitle>
+            <CardTitle className="text-center text-3xl text-primary font-headline">Salon du Modérateur</CardTitle>
             <CardDescription className="text-center text-lg text-foreground/80">
               Code du salon : <span className="font-bold text-primary tracking-widest">{lobbyId}</span>
             </CardDescription>
