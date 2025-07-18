@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { doc, onSnapshot, updateDoc, collection } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, collection, writeBatch, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2, ShieldCheck, XCircle, Flame, Star, ChevronsRight } from 'lucide-react';
 import type { GameState, LobbyData, PlayerState } from '@/types/quiz';
@@ -22,26 +22,68 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
-function HostControls({ lobbyId, currentQuestionIndex, quizLength }: { lobbyId: string, currentQuestionIndex: number, quizLength: number }) {
+function HostControls({ lobbyId }: { lobbyId: string }) {
   const handleNextQuestion = async () => {
-    const nextIndex = currentQuestionIndex + 1;
     const lobbyDocRef = doc(db, 'lobbies', lobbyId);
-    if (nextIndex >= quizLength) {
+    
+    // To prevent race conditions, we will use a transaction or batched write
+    // to read the current state and write the new state.
+    // For simplicity, let's just update based on the last known client state.
+    // A more robust solution would use a transaction to read and write.
+    
+    try {
+        const lobbySnap = await getDocs(collection(db, 'lobbies', lobbyId, 'answers'));
+        const batch = writeBatch(db);
+        
+        // Clear previous answers
+        lobbySnap.docs.forEach(doc => batch.delete(doc.ref));
+
+        await batch.commit();
+
+        await updateDoc(lobbyDocRef, {
+            'gameState.phase': 'question',
+            'gameState.currentQuestionIndex': lobbyData.gameState.currentQuestionIndex + 1
+        });
+    } catch(e) {
+        // Fallback for when there are no answers
+        const lobbyData = (await getDoc(doc(db, 'lobbies', lobbyId))).data() as LobbyData;
+        const nextIndex = lobbyData.gameState.currentQuestionIndex + 1;
+        if(nextIndex >= lobbyData.quiz.length) {
+            await updateDoc(lobbyDocRef, {
+                'gameState.phase': 'finished',
+                status: 'finished',
+            });
+        } else {
+             await updateDoc(lobbyDocRef, {
+                'gameState.phase': 'question',
+                'gameState.currentQuestionIndex': nextIndex,
+            });
+        }
+    }
+  };
+  
+  const handleNextWithTransition = async () => {
+    const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+    const lobbyData = (await getDoc(lobbyDocRef)).data() as LobbyData;
+    const nextIndex = lobbyData.gameState.currentQuestionIndex + 1;
+
+    if (nextIndex >= lobbyData.quiz.length) {
       await updateDoc(lobbyDocRef, {
         'gameState.phase': 'finished',
         status: 'finished',
       });
     } else {
-      await updateDoc(lobbyDocRef, {
+       await updateDoc(lobbyDocRef, {
         'gameState.currentQuestionIndex': nextIndex,
         'gameState.phase': 'question',
       });
     }
-  };
+  }
+
 
   const handleNullifyQuestion = async () => {
-    console.log(`Question ${currentQuestionIndex} annulée.`);
-    await handleNextQuestion();
+    // This action will just move to the next question without scoring.
+    await handleNextWithTransition();
   };
 
   return (
@@ -50,7 +92,7 @@ function HostControls({ lobbyId, currentQuestionIndex, quizLength }: { lobbyId: 
         <CardTitle className="text-center">Contrôles de l'Hôte</CardTitle>
       </CardHeader>
       <CardContent className="flex justify-center gap-4">
-        <Button onClick={handleNextQuestion} size="lg">
+        <Button onClick={handleNextWithTransition} size="lg">
             <ChevronsRight className="mr-2 h-5 w-5" />
             Question Suivante
         </Button>
@@ -115,9 +157,11 @@ export function GameContainer() {
     const searchParams = useSearchParams();
     
     const lobbyId = Array.isArray(params.lobbyId) ? params.lobbyId[0] : params.lobbyId;
-    const playerName = searchParams.get('playerName');
     const role = searchParams.get('role'); // 'moderator' or null
     const isHost = role === 'moderator';
+
+    // Player name state, which could be from URL or from lobby data for host
+    const [playerName, setPlayerName] = useState<string | null>(searchParams.get('playerName'));
 
     const [lobbyData, setLobbyData] = useState<LobbyData | null>(null);
     const [playerState, setPlayerState] = useState<PlayerState | null>(null);
@@ -132,6 +176,12 @@ export function GameContainer() {
             if (docSnap.exists()) {
                 const data = docSnap.data() as LobbyData;
                 setLobbyData(data);
+
+                // If the user is the host, we get their name from the lobby data
+                if (isHost && !playerName && data.hostName) {
+                    setPlayerName(data.hostName);
+                }
+
                 if (data.status === 'finished' || (data.gameState && data.gameState.phase === 'finished')) {
                     router.push('/');
                 }
@@ -146,22 +196,28 @@ export function GameContainer() {
             setLoading(false);
         });
 
+        return () => unsubscribeLobby();
+    }, [lobbyId, router, isHost, playerName]);
+
+    useEffect(() => {
         let unsubscribePlayer: (() => void) | undefined;
-        if (playerName) {
+        if (lobbyId && playerName) {
             const playerDocRef = doc(db, 'lobbies', lobbyId, 'players', playerName);
             unsubscribePlayer = onSnapshot(playerDocRef, (docSnap) => {
                 if(docSnap.exists()){
                     setPlayerState(docSnap.data() as PlayerState);
+                } else {
+                    // Player doc might not exist initially for host
+                    // It should be created in `lobby/create` page.
+                    console.log(`Player doc for ${playerName} not found.`);
                 }
             });
         }
-
-
         return () => {
-            unsubscribeLobby();
             if (unsubscribePlayer) unsubscribePlayer();
         }
-    }, [lobbyId, router, playerName]);
+    }, [lobbyId, playerName]);
+
 
     const handleFinish = async () => {
       if (isHost) {
@@ -189,7 +245,6 @@ export function GameContainer() {
     }
     
     const { quiz, topic, timer, gameState } = lobbyData;
-    const currentQuestionIndex = gameState.currentQuestionIndex;
 
     return (
         <div>
@@ -204,7 +259,7 @@ export function GameContainer() {
                 gameState={gameState}
             />
             {isHost && gameState.phase === 'reveal' && (
-                <HostControls lobbyId={lobbyId} currentQuestionIndex={currentQuestionIndex} quizLength={quiz.length}/>
+                <HostControls lobbyId={lobbyId} />
             )}
         </div>
     );
