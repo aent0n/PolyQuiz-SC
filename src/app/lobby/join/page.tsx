@@ -1,7 +1,8 @@
+
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,12 +13,20 @@ import { useToast } from '@/hooks/use-toast';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-export default function JoinLobbyPage() {
+function JoinLobbyForm() {
   const [lobbyCode, setLobbyCode] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const codeFromUrl = searchParams.get('code');
+    if (codeFromUrl) {
+      setLobbyCode(codeFromUrl.toUpperCase());
+    }
+  }, [searchParams]);
 
   const handleJoinLobby = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,4 +126,17 @@ export default function JoinLobbyPage() {
       </div>
     </main>
   );
+}
+
+
+export default function JoinLobbyPage() {
+  return (
+    <Suspense fallback={
+        <div className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 bg-background">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    }>
+        <JoinLobbyForm />
+    </Suspense>
+  )
 }

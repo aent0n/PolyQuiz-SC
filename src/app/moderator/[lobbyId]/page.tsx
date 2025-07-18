@@ -6,8 +6,11 @@ import { doc, onSnapshot, collection, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Users } from 'lucide-react';
+import { ArrowLeft, Loader2, Users, QrCode } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { QRCodeSVG } from 'qrcode.react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
 
 interface LobbyData {
   topic: string;
@@ -39,13 +42,20 @@ function PlayerList({ players }: { players: Player[] }) {
   );
 }
 
-export default function ModeratorLobbyPage({ params }: { params: Promise<{ lobbyId: string }> }) {
+export default function ModeratorLobbyPage({ params }: { params: { lobbyId: string } }) {
   const [lobbyData, setLobbyData] = useState<LobbyData | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { lobbyId } = use(params);
   const router = useRouter();
+  const [joinUrl, setJoinUrl] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        setJoinUrl(`${window.location.origin}/lobby/join?code=${lobbyId}`);
+    }
+  }, [lobbyId]);
 
   useEffect(() => {
     if (!lobbyId) return;
@@ -94,10 +104,28 @@ export default function ModeratorLobbyPage({ params }: { params: Promise<{ lobby
       <div className="w-full max-w-4xl">
         <Card className="border-primary/20 shadow-lg shadow-primary/10">
           <CardHeader>
-            <CardTitle className="text-center text-3xl text-primary font-headline">Salon du Modérateur</CardTitle>
-            <CardDescription className="text-center text-lg text-foreground/80">
-              Code du salon : <span className="font-bold text-primary tracking-widest">{lobbyId}</span>
-            </CardDescription>
+             <div className="flex justify-between items-start">
+                <div className="flex-1 text-center">
+                    <CardTitle className="text-3xl text-primary font-headline">Salon du Modérateur</CardTitle>
+                    <CardDescription className="text-lg text-foreground/80">
+                        Code du salon : <span className="font-bold text-primary tracking-widest">{lobbyId}</span>
+                    </CardDescription>
+                </div>
+                <Popover>
+                    <PopoverTrigger asChild>
+                         <Button variant="ghost" size="icon">
+                            <QrCode className="h-6 w-6" />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-4">
+                        <div className="flex flex-col items-center gap-2">
+                            <h4 className="font-medium text-lg">Scannez pour rejoindre</h4>
+                            {joinUrl && <QRCodeSVG value={joinUrl} size={192} />}
+                             <p className="text-sm text-muted-foreground">{lobbyId}</p>
+                        </div>
+                    </PopoverContent>
+                </Popover>
+            </div>
           </CardHeader>
           <CardContent className="text-center space-y-8">
             {loading && (
