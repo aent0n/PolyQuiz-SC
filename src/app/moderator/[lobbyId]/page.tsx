@@ -18,10 +18,10 @@ export default function ModeratorLobbyPage({ params }: { params: { lobbyId: stri
   const [lobbyData, setLobbyData] = useState<LobbyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { lobbyId } = params;
 
   useEffect(() => {
     const fetchLobbyData = async () => {
-      const lobbyId = params.lobbyId;
       if (!lobbyId) return;
       
       try {
@@ -42,7 +42,7 @@ export default function ModeratorLobbyPage({ params }: { params: { lobbyId: stri
     };
 
     fetchLobbyData();
-  }, [params.lobbyId]);
+  }, [lobbyId]);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 bg-background">
@@ -51,7 +51,7 @@ export default function ModeratorLobbyPage({ params }: { params: { lobbyId: stri
           <CardHeader>
             <CardTitle className="text-center text-3xl text-primary">Salon du Modérateur</CardTitle>
             <CardDescription className="text-center text-lg text-foreground/80">
-              Code du salon : <span className="font-bold text-primary">{params.lobbyId}</span>
+              Code du salon : <span className="font-bold text-primary">{lobbyId}</span>
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center">
