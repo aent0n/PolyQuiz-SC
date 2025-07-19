@@ -124,6 +124,7 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
   }, [phase, currentQuestionIndex, lobbyId]);
 
 
+  // Effect to reset state when a new question is loaded
   useEffect(() => {
     setSelectedAnswer(null);
     setTimeLeft(timer);
@@ -131,18 +132,7 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
 
   // Timer countdown effect
   useEffect(() => {
-    if (!isAnswerPhase) return;
-
-    if (timeLeft <= 0) {
-      const lobbyDocRef = doc(db, 'lobbies', lobbyId);
-      // Ensure only host updates phase to prevent race conditions
-      getDoc(lobbyDocRef).then(lobbySnap => {
-        if (lobbySnap.exists() && lobbySnap.data().hostName === playerName) {
-           if (lobbySnap.data().gameState.phase === 'question') {
-             updateDoc(lobbyDocRef, { 'gameState.phase': 'reveal' });
-           }
-        }
-      });
+    if (!isAnswerPhase || timeLeft <= 0) {
       return;
     }
 
