@@ -1,11 +1,13 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { QuizSetupForm, type QuizSetupFormValues } from '@/components/quiz/quiz-setup';
 import { QuizGame } from '@/components/quiz/quiz-game';
 import { generateStarCitizenQuiz, type GenerateStarCitizenQuizOutput } from '@/ai/flows/generate-star-citizen-quiz';
 import { useToast } from "@/hooks/use-toast";
-import type { Quiz } from '@/types/quiz';
+import type { Quiz, GameState } from '@/types/quiz';
+import { QuizResults } from '@/components/quiz/quiz-results';
 
 export default function QuizPage() {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -13,6 +15,34 @@ export default function QuizPage() {
   const { toast } = useToast();
   const [topic, setTopic] = useState<string>('lore');
   const [timer, setTimer] = useState(15);
+  const [gameState, setGameState] = useState<GameState | null>(null);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [score, setScore] = useState(0);
+
+  const timerRef = useRef<NodeJS.Timeout>();
+
+  useEffect(() => {
+    if (timerRef.current) {
+        clearInterval(timerRef.current);
+    }
+
+    if (gameState?.phase === 'question') {
+        setTimeLeft(timer);
+        
+        timerRef.current = setInterval(() => {
+            setTimeLeft(prevTime => {
+                if (prevTime <= 1) {
+                    clearInterval(timerRef.current);
+                    setGameState(gs => gs ? { ...gs, phase: 'reveal' } : null);
+                    return 0;
+                }
+                return prevTime - 1;
+            });
+        }, 1000);
+    }
+    return () => clearInterval(timerRef.current);
+
+  }, [gameState?.phase, gameState?.currentQuestionIndex, timer]);
 
   const handleStartQuiz = async (data: QuizSetupFormValues) => {
     setIsLoading(true);
@@ -24,6 +54,8 @@ export default function QuizPage() {
         numQuestions: data.numQuestions,
       });
       setQuiz(result.quiz);
+      setGameState({ currentQuestionIndex: 0, phase: 'question' });
+      setScore(0);
     } catch (error) {
       console.error(error);
       toast({
@@ -37,7 +69,45 @@ export default function QuizPage() {
   };
   
   const handleQuizFinish = () => {
+    setGameState(gs => gs ? { ...gs, phase: 'finished' } : null);
+  }
+
+  const handleRestart = () => {
     setQuiz(null);
+    setGameState(null);
+    setScore(0);
+  }
+
+  const handleNextQuestion = () => {
+    if (!quiz || !gameState) return;
+
+    const nextIndex = gameState.currentQuestionIndex + 1;
+    if (nextIndex >= quiz.length) {
+      handleQuizFinish();
+    } else {
+      setGameState({ currentQuestionIndex: nextIndex, phase: 'question' });
+    }
+  };
+  
+  const renderContent = () => {
+    if (gameState?.phase === 'finished') {
+        return <QuizResults score={score} totalQuestions={quiz?.length || 0} onRestart={handleRestart} />;
+    }
+    if (quiz && gameState) {
+      return (
+        <QuizGame 
+          quiz={quiz} 
+          topic={topic} 
+          onFinish={handleQuizFinish} 
+          timer={timer} 
+          gameState={gameState}
+          timeLeft={timeLeft}
+          onNextQuestion={handleNextQuestion}
+          onScoreUpdate={setScore}
+        />
+      );
+    }
+    return <QuizSetupForm onSubmit={handleStartQuiz} isLoading={isLoading} showHeader={true} />;
   }
 
   return (
@@ -45,11 +115,7 @@ export default function QuizPage() {
        <div className="absolute inset-0 -z-10 h-full w-full bg-background bg-[radial-gradient(theme(colors.accent/20%)_1px,transparent_1px)] [background-size:32px_32px]"></div>
        
        <div className="z-10 w-full max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {!quiz ? (
-          <QuizSetupForm onSubmit={handleStartQuiz} isLoading={isLoading} showHeader={true} />
-        ) : (
-          <QuizGame quiz={quiz} topic={topic} onFinish={handleQuizFinish} timer={timer} />
-        )}
+        {renderContent()}
       </div>
 
        <footer className="z-10 mt-8 text-center text-sm text-foreground/50">

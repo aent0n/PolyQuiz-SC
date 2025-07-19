@@ -15,30 +15,47 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { HelpCircle } from 'lucide-react';
+import { ChevronsRight, HelpCircle } from 'lucide-react';
 
 
 interface QuizGameProps {
-  lobbyId: string;
-  playerName: string | null;
   quiz: Quiz;
   topic: string;
   onFinish: () => void;
   timer: number;
   gameState: GameState;
   timeLeft: number;
+  // Multiplayer-specific props
+  lobbyId?: string;
+  playerName?: string | null;
+  // Solo-specific props
+  onNextQuestion?: () => void;
+  onScoreUpdate?: React.Dispatch<React.SetStateAction<number>>;
 }
+
 
 const STREAK_BONUS_THRESHOLD = 3;
 const BASE_POINTS = 10;
 const STREAK_BONUS_POINTS = 5;
 
-export function QuizGame({ quiz, topic, onFinish, timer, lobbyId, playerName, gameState, timeLeft }: QuizGameProps) {
+export function QuizGame({ 
+  quiz, 
+  topic, 
+  onFinish, 
+  timer, 
+  lobbyId, 
+  playerName, 
+  gameState, 
+  timeLeft,
+  onNextQuestion,
+  onScoreUpdate
+}: QuizGameProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   
   const { currentQuestionIndex, phase } = gameState;
   const currentQuestion: QuizQuestion | undefined = quiz[currentQuestionIndex];
   const isAnswerPhase = phase === 'question';
+  const isMultiplayer = !!lobbyId;
 
   const previousQuestionIndex = useRef<number>();
 
@@ -51,7 +68,7 @@ export function QuizGame({ quiz, topic, onFinish, timer, lobbyId, playerName, ga
   }, [currentQuestionIndex]);
 
   const submitAnswer = useCallback(async (answer: string) => {
-    if (!playerName || !isAnswerPhase || !currentQuestion) return;
+    if (!isMultiplayer || !playerName || !isAnswerPhase || !currentQuestion) return;
 
     const answerRef = doc(db, 'lobbies', lobbyId, 'answers', `${currentQuestionIndex}-${playerName}`);
     try {
@@ -65,81 +82,92 @@ export function QuizGame({ quiz, topic, onFinish, timer, lobbyId, playerName, ga
     } catch (e) {
       console.error("Failed to submit answer:", e);
     }
-  }, [lobbyId, playerName, currentQuestionIndex, currentQuestion, isAnswerPhase]);
+  }, [lobbyId, playerName, currentQuestionIndex, currentQuestion, isAnswerPhase, isMultiplayer]);
 
   const handleAnswerSelect = (option: string) => {
     if (isAnswerPhase) {
       setSelectedAnswer(option);
-      submitAnswer(option);
+      if (isMultiplayer) {
+        submitAnswer(option);
+      }
     }
   }
 
-  // Score calculation effect
+  // Score calculation effect - runs in both modes but targets different state updates
   useEffect(() => {
-      if (phase !== 'reveal') return;
+      if (phase !== 'reveal' || !currentQuestion) return;
 
-      const scoreCalculatedMarkerRef = doc(db, 'lobbies', lobbyId, 'answers', `score-calculated-${currentQuestionIndex}`);
+      if (!isMultiplayer && onScoreUpdate) {
+        // --- SOLO MODE SCORE CALCULATION ---
+        if (selectedAnswer === currentQuestion.answer) {
+          onScoreUpdate(prevScore => prevScore + BASE_POINTS);
+        }
+        return; // End of solo mode logic
+      }
+      
+      if(isMultiplayer) {
+        // --- MULTIPLAYER MODE SCORE CALCULATION ---
+        const scoreCalculatedMarkerRef = doc(db, 'lobbies', lobbyId, 'answers', `score-calculated-${currentQuestionIndex}`);
 
-      const calculateScores = async () => {
-          try {
-              await runTransaction(db, async (transaction) => {
-                  const marker = await transaction.get(scoreCalculatedMarkerRef);
-                  if (marker.exists()) {
-                      console.log(`Scores for question ${currentQuestionIndex} already calculated.`);
-                      return; // Scores already calculated
-                  }
-                  
-                  // Phase 1: Reads
-                  const answersQuery = query(collection(db, 'lobbies', lobbyId, 'answers'), where('questionIndex', '==', currentQuestionIndex));
-                  const answersSnapshot = await getDocs(answersQuery);
-                  
-                  const currentAnswers = answersSnapshot.docs.map(doc => doc.data() as { playerName: string; isCorrect: boolean });
+        const calculateScores = async () => {
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const marker = await transaction.get(scoreCalculatedMarkerRef);
+                    if (marker.exists()) {
+                        console.log(`Scores for question ${currentQuestionIndex} already calculated.`);
+                        return; // Scores already calculated
+                    }
+                    
+                    const answersQuery = query(collection(db, 'lobbies', lobbyId, 'answers'), where('questionIndex', '==', currentQuestionIndex));
+                    const answersSnapshot = await getDocs(answersQuery);
+                    
+                    const currentAnswers = answersSnapshot.docs.map(doc => doc.data() as { playerName: string; isCorrect: boolean });
 
-                  if (currentAnswers.length === 0) {
-                      transaction.set(scoreCalculatedMarkerRef, { calculatedAt: new Date() });
-                      return;
-                  }
+                    if (currentAnswers.length === 0) {
+                        transaction.set(scoreCalculatedMarkerRef, { calculatedAt: new Date() });
+                        return;
+                    }
 
-                  const playerRefs = currentAnswers.map(answer => doc(db, 'lobbies', lobbyId, 'players', answer.playerName));
-                  const playerDocs = [];
-                  for(const ref of playerRefs) {
-                      playerDocs.push(await transaction.get(ref));
-                  }
-                  
-                  // Phase 2: Writes
-                  for (let i = 0; i < currentAnswers.length; i++) {
-                      const answer = currentAnswers[i];
-                      const playerDoc = playerDocs[i];
+                    const playerRefs = currentAnswers.map(answer => doc(db, 'lobbies', lobbyId, 'players', answer.playerName));
+                    const playerDocs = [];
+                    for(const ref of playerRefs) {
+                        playerDocs.push(await transaction.get(ref));
+                    }
+                    
+                    for (let i = 0; i < currentAnswers.length; i++) {
+                        const answer = currentAnswers[i];
+                        const playerDoc = playerDocs[i];
 
-                      if (!playerDoc.exists()) continue;
+                        if (!playerDoc.exists()) continue;
 
-                      const playerData = playerDoc.data() as PlayerState;
-                      let newScore = playerData.score;
-                      let newStreak = playerData.streak;
+                        const playerData = playerDoc.data() as PlayerState;
+                        let newScore = playerData.score;
+                        let newStreak = playerData.streak;
 
-                      if (answer.isCorrect) {
-                          newStreak += 1;
-                          let pointsGained = BASE_POINTS;
-                          if (newStreak >= STREAK_BONUS_THRESHOLD) {
-                              pointsGained += STREAK_BONUS_POINTS;
-                          }
-                          newScore += pointsGained;
-                      } else {
-                          newStreak = 0;
-                      }
-                      transaction.update(playerRefs[i], { score: newScore, streak: newStreak });
-                  }
-                  
-                  transaction.set(scoreCalculatedMarkerRef, { calculatedAt: new Date() });
-              });
-          } catch (error) {
-              console.error("Transaction failed: ", error);
-          }
-      };
+                        if (answer.isCorrect) {
+                            newStreak += 1;
+                            let pointsGained = BASE_POINTS;
+                            if (newStreak >= STREAK_BONUS_THRESHOLD) {
+                                pointsGained += STREAK_BONUS_POINTS;
+                            }
+                            newScore += pointsGained;
+                        } else {
+                            newStreak = 0;
+                        }
+                        transaction.update(playerRefs[i], { score: newScore, streak: newStreak });
+                    }
+                    
+                    transaction.set(scoreCalculatedMarkerRef, { calculatedAt: new Date() });
+                });
+            } catch (error) {
+                console.error("Transaction failed: ", error);
+            }
+        };
 
-      calculateScores();
+        calculateScores();
+      }
 
-  }, [phase, currentQuestionIndex, lobbyId]);
+  }, [phase, currentQuestionIndex, lobbyId, isMultiplayer, onScoreUpdate, selectedAnswer, currentQuestion]);
 
 
   if (!currentQuestion) {
@@ -197,20 +225,33 @@ export function QuizGame({ quiz, topic, onFinish, timer, lobbyId, playerName, ga
           {!isAnswerPhase && <p>Les réponses sont verrouillées. Révélation des scores...</p>}
         </div>
 
-        {!isAnswerPhase && currentQuestion.explanation && (
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="item-1">
-              <AccordionTrigger>
-                <div className="flex items-center gap-2">
-                  <HelpCircle className="h-4 w-4" />
-                  <span>Explication</span>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                {currentQuestion.explanation}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+        {!isAnswerPhase && (
+          <div className="pt-2">
+            {currentQuestion.explanation && (
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="item-1">
+                  <AccordionTrigger>
+                    <div className="flex items-center gap-2">
+                      <HelpCircle className="h-4 w-4" />
+                      <span>Explication</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {currentQuestion.explanation}
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            )}
+
+            {!isMultiplayer && onNextQuestion && (
+              <div className="text-center mt-4">
+                <Button onClick={onNextQuestion}>
+                  Question Suivante
+                  <ChevronsRight className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>
