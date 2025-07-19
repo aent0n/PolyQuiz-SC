@@ -3,19 +3,19 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Award, RotateCw, TrendingDown, TrendingUp, Home } from 'lucide-react';
+import { Award, RotateCw, TrendingDown, TrendingUp, Home, CheckCircle } from 'lucide-react';
 import { useMemo } from 'react';
 import Link from 'next/link';
 
 interface QuizResultsProps {
   score: number;
   totalQuestions: number;
+  correctAnswers: number; // Ajout du nombre de réponses correctes
   onRestart: () => void;
 }
 
-export function QuizResults({ score, totalQuestions, onRestart }: QuizResultsProps) {
-  const totalPossibleScore = totalQuestions * 10; // Assuming 10 points per question
-  const percentage = totalPossibleScore > 0 ? Math.round((score / totalPossibleScore) * 100) : 0;
+export function QuizResults({ score, totalQuestions, correctAnswers, onRestart }: QuizResultsProps) {
+  const percentage = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
 
   const feedback = useMemo(() => {
     if (percentage === 100) {
@@ -57,14 +57,17 @@ export function QuizResults({ score, totalQuestions, onRestart }: QuizResultsPro
           {feedback.icon}
         </div>
         <div className="text-center">
-            <p className="text-lg text-foreground/80">Votre Score</p>
-            <p className="text-7xl font-bold text-primary">{score}<span className="text-3xl text-foreground/60">/{totalPossibleScore}</span></p>
-            <p className="text-2xl font-medium text-accent-foreground">{percentage}%</p>
+            <p className="text-lg text-foreground/80">Votre Score Final</p>
+            <p className="text-7xl font-bold text-primary">{score}<span className="text-3xl text-foreground/60"> pts</span></p>
+             <div className="flex items-center justify-center gap-2 text-xl font-medium text-foreground/80 mt-2">
+                <CheckCircle className="h-6 w-6 text-green-500"/>
+                <span>{correctAnswers} / {totalQuestions} bonnes réponses</span>
+             </div>
         </div>
-        <div className="flex flex-col gap-4 w-full max-w-xs">
+        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
             <Button onClick={onRestart} className="w-full text-lg py-6">
               <RotateCw className="mr-2 h-5 w-5" />
-              Rejouer (Solo)
+              Rejouer
             </Button>
              <Button asChild variant="outline" className="w-full text-lg py-6">
                 <Link href="/">

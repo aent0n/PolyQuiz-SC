@@ -23,6 +23,7 @@ export default function QuizPage() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [correctAnswers, setCorrectAnswers] = useState(0);
 
 
   const timerRef = useRef<NodeJS.Timeout>();
@@ -63,6 +64,7 @@ export default function QuizPage() {
       setGameState({ currentQuestionIndex: 0, phase: 'question' });
       setScore(0);
       setStreak(0);
+      setCorrectAnswers(0);
     } catch (error) {
       console.error(error);
       toast({
@@ -84,6 +86,7 @@ export default function QuizPage() {
     setGameState(null);
     setScore(0);
     setStreak(0);
+    setCorrectAnswers(0);
   }
 
   const handleNextQuestion = () => {
@@ -99,7 +102,12 @@ export default function QuizPage() {
   
   const renderContent = () => {
     if (gameState?.phase === 'finished') {
-        return <QuizResults score={score} totalQuestions={quiz?.length || 0} onRestart={handleRestart} />;
+        return <QuizResults 
+                  score={score} 
+                  totalQuestions={quiz?.length || 0} 
+                  correctAnswers={correctAnswers}
+                  onRestart={handleRestart} 
+                />;
     }
     if (quiz && gameState) {
       return (
@@ -115,6 +123,7 @@ export default function QuizPage() {
             onNextQuestion={handleNextQuestion}
             onScoreUpdate={setScore}
             onStreakUpdate={setStreak}
+            onCorrectAnswer={() => setCorrectAnswers(ca => ca + 1)}
           />
         </>
       );

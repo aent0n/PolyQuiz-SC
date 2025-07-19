@@ -23,6 +23,7 @@ interface Answer {
 interface EnrichedPlayerState extends PlayerState {
     id: string;
     answers: Answer[];
+    correctAnswersCount: number;
 }
 
 function GameResults() {
@@ -61,26 +62,24 @@ function GameResults() {
 
                 if (lobbySnapshot.exists()) {
                     setHostName(lobbySnapshot.data().hostName);
+                    // Use the quiz length from the lobby data for total questions
+                    setQuestionCount(lobbySnapshot.data().quiz.length);
                 }
+
 
                 if (playersSnapshot.empty) {
                     throw new Error("Aucun joueur trouvé pour cette partie.");
                 }
 
-                const allAnswers = answersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Answer));
+                const allAnswers = answersSnapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() } as Answer))
+                    .filter(answer => answer.questionIndex !== undefined); // Filter out markers
                 
-                let maxQuestionIndex = 0;
-                allAnswers.forEach(a => {
-                    if(a.questionIndex > maxQuestionIndex) {
-                        maxQuestionIndex = a.questionIndex;
-                    }
-                });
-                setQuestionCount(maxQuestionIndex + 1);
-
                 const enrichedPlayers = playersSnapshot.docs.map(doc => {
                     const playerData = doc.data() as PlayerState;
                     const playerAnswers = allAnswers.filter(a => a.playerName === playerData.name);
-                    return { id: doc.id, ...playerData, answers: playerAnswers };
+                    const correctAnswersCount = playerAnswers.filter(a => a.isCorrect).length;
+                    return { id: doc.id, ...playerData, answers: playerAnswers, correctAnswersCount };
                 });
 
                 // Sort by score descending
@@ -155,6 +154,7 @@ function GameResults() {
                                     </div>
                                     <div className="text-right">
                                         <p className="text-2xl font-bold text-primary">{player.score} pts</p>
+                                         <p className="text-sm text-foreground/70">{player.correctAnswersCount}/{questionCount} correctes</p>
                                     </div>
                                 </Card>
                             )
@@ -178,7 +178,8 @@ function GameResults() {
                                     <TableHead>Joueur</TableHead>
                                     <TableHead className="text-center">Score</TableHead>
                                     <TableHead className="text-center">Série Max</TableHead>
-                                    <TableHead className="text-center">Réponses (Q1...)</TableHead>
+                                    <TableHead className="text-center">Réponses Correctes</TableHead>
+                                    <TableHead className="text-center">Détail (Q1...)</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -194,13 +195,14 @@ function GameResults() {
                                             </TableCell>
                                             <TableCell className="text-center font-bold">{player.score}</TableCell>
                                             <TableCell className="text-center">{player.streak}</TableCell>
-                                            <TableCell className="flex justify-center gap-2">
+                                            <TableCell className="text-center">{player.correctAnswersCount} / {questionCount}</TableCell>
+                                            <TableCell className="flex justify-center gap-2 flex-wrap">
                                                 {Array.from({ length: questionCount }).map((_, qIndex) => {
                                                     const answer = player.answers.find(a => a.questionIndex === qIndex);
                                                     if (!answer) return <Badge key={qIndex} variant="outline" className="h-6 w-6 p-0 flex items-center justify-center">-</Badge>;
                                                     return answer.isCorrect
-                                                        ? <CheckCircle2 key={qIndex} className="h-6 w-6 text-green-500" />
-                                                        : <XCircle key={qIndex} className="h-6 w-6 text-red-500" />;
+                                                        ? <CheckCircle2 key={qIndex} className="h-6 w-6 text-green-500" title={`Question ${qIndex + 1}: Correct`} />
+                                                        : <XCircle key={qIndex} className="h-6 w-6 text-red-500" title={`Question ${qIndex + 1}: Incorrect`} />;
                                                 })}
                                             </TableCell>
                                         </TableRow>

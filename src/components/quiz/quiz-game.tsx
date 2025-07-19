@@ -32,6 +32,7 @@ interface QuizGameProps {
   onNextQuestion?: () => void;
   onScoreUpdate?: React.Dispatch<React.SetStateAction<number>>;
   onStreakUpdate?: React.Dispatch<React.SetStateAction<number>>;
+  onCorrectAnswer?: () => void;
 }
 
 
@@ -50,7 +51,8 @@ export function QuizGame({
   timeLeft,
   onNextQuestion,
   onScoreUpdate,
-  onStreakUpdate
+  onStreakUpdate,
+  onCorrectAnswer
 }: QuizGameProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   
@@ -99,9 +101,10 @@ export function QuizGame({
   useEffect(() => {
       if (phase !== 'reveal' || !currentQuestion) return;
 
-      if (!isMultiplayer && onScoreUpdate && onStreakUpdate) {
+      if (!isMultiplayer && onScoreUpdate && onStreakUpdate && onCorrectAnswer) {
         // --- SOLO MODE SCORE CALCULATION ---
         if (selectedAnswer === currentQuestion.answer) {
+          onCorrectAnswer();
           onStreakUpdate(prevStreak => {
             const newStreak = prevStreak + 1;
             let pointsGained = BASE_POINTS;
@@ -179,7 +182,7 @@ export function QuizGame({
         calculateScores();
       }
 
-  }, [phase, currentQuestionIndex, lobbyId, isMultiplayer, onScoreUpdate, onStreakUpdate, selectedAnswer, currentQuestion]);
+  }, [phase, currentQuestionIndex, lobbyId, isMultiplayer, onScoreUpdate, onStreakUpdate, onCorrectAnswer, selectedAnswer, currentQuestion]);
 
 
   if (!currentQuestion) {
