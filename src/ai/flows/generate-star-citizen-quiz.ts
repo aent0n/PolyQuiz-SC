@@ -48,9 +48,13 @@ const generateStarCitizenQuizPrompt = ai.definePrompt({
   output: {schema: GenerateStarCitizenQuizOutputSchema},
   prompt: `You are an expert quiz generator specializing in Star Citizen trivia.
 
-  Generate a quiz in French with {{numQuestions}} questions about {{topic}}.
-  For each question, provide a brief explanation or fun fact for the correct answer.
-  Ensure that the answer is one of the 4 options provided.
+  Generate a quiz with {{numQuestions}} questions about {{topic}}.
+  
+  The entire quiz should be primarily in French, but you MUST keep technical terms, ship names, or proper nouns in English if their French translation is awkward or not commonly used by the community (e.g., "Jump Point", "Stanton System", "Aegis Dynamics", "UEE"). The goal is to use language that feels natural to a French-speaking Star Citizen fan.
+
+  For each question:
+  - Provide a brief, lore-rich explanation for the correct answer. The explanation should be detailed and include specific lore elements like dates, entities (corporations, alien races), historical events, or important characters.
+  - Ensure that the answer is one of the 4 options provided.
   `,
 });
 
