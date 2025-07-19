@@ -6,10 +6,11 @@ import { doc, onSnapshot, collection, deleteDoc, updateDoc, getDocs, writeBatch 
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { LogOut, Loader2, Users, QrCode } from 'lucide-react';
+import { LogOut, Loader2, Users, QrCode, Crown } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 
 interface LobbyData {
@@ -17,6 +18,7 @@ interface LobbyData {
   timer: number;
   quiz: any[];
   status?: 'waiting' | 'playing' | 'finished';
+  hostName: string;
 }
 
 interface Player {
@@ -24,21 +26,29 @@ interface Player {
   name: string;
 }
 
-function PlayerList({ players }: { players: Player[] }) {
+function PlayerList({ players, hostName }: { players: Player[], hostName: string }) {
   if (players.length === 0) {
     return <p className="text-foreground/60">En attente des joueurs...</p>;
   }
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-      {players.map((player) => (
-        <div key={player.id} className="flex items-center gap-2 p-2 rounded-lg bg-secondary">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
-            {player.name.charAt(0).toUpperCase()}
-          </span>
-          <p className="font-semibold truncate">{player.name}</p>
-        </div>
-      ))}
+      {players.map((player) => {
+        const isHost = player.name === hostName;
+        return (
+          <div key={player.id} className={cn("flex items-center gap-2 p-2 rounded-lg bg-secondary", isHost && "ring-2 ring-yellow-400")}>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
+              {player.name.charAt(0).toUpperCase()}
+            </span>
+            <div className="flex-1 truncate">
+                <p className="font-semibold truncate flex items-center gap-1.5">
+                    {player.name}
+                    {isHost && <Crown className="h-4 w-4 text-yellow-400" />}
+                </p>
+            </div>
+          </div>
+        )
+      })}
     </div>
   );
 }
@@ -193,7 +203,7 @@ export default function ModeratorLobbyPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                     <PlayerList players={players} />
+                     <PlayerList players={players} hostName={lobbyData.hostName} />
                   </CardContent>
                 </Card>
 

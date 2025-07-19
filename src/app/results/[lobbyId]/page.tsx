@@ -3,12 +3,12 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { PlayerState } from '@/types/quiz';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Home, BarChart3, CheckCircle2, XCircle, Flame } from 'lucide-react';
+import { Loader2, Home, BarChart3, CheckCircle2, XCircle, Crown } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -38,6 +38,7 @@ function GameResults() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [questionCount, setQuestionCount] = useState(0);
+    const [hostName, setHostName] = useState<string | null>(null);
 
     useEffect(() => {
         if (!lobbyId) {
@@ -48,13 +49,19 @@ function GameResults() {
         const fetchResults = async () => {
             try {
                 setLoading(true);
+                const lobbyDocRef = doc(db, 'lobbies', lobbyId);
                 const playersColRef = collection(db, 'lobbies', lobbyId, 'players');
                 const answersColRef = collection(db, 'lobbies', lobbyId, 'answers');
 
-                const [playersSnapshot, answersSnapshot] = await Promise.all([
+                const [lobbySnapshot, playersSnapshot, answersSnapshot] = await Promise.all([
+                    getDoc(lobbyDocRef),
                     getDocs(playersColRef),
                     getDocs(answersColRef)
                 ]);
+
+                if (lobbySnapshot.exists()) {
+                    setHostName(lobbySnapshot.data().hostName);
+                }
 
                 if (playersSnapshot.empty) {
                     throw new Error("Aucun joueur trouvé pour cette partie.");
@@ -130,22 +137,28 @@ function GameResults() {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        {players.map((player, index) => (
-                            <Card key={player.id} className="flex items-center p-4 bg-secondary">
-                                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/20 text-primary font-bold text-xl mr-4">
-                                    {index + 1}
-                                </div>
-                                <div className="flex-grow">
-                                    <p className="font-bold text-lg">{player.name}</p>
-                                    <p className="text-sm text-foreground/70">
-                                        Série max: <span className="font-semibold">{player.streak}</span>
-                                    </p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-2xl font-bold text-primary">{player.score} pts</p>
-                                </div>
-                            </Card>
-                        ))}
+                        {players.map((player, index) => {
+                            const isPlayerHost = player.name === hostName;
+                            return (
+                                <Card key={player.id} className="flex items-center p-4 bg-secondary">
+                                    <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/20 text-primary font-bold text-xl mr-4">
+                                        {index + 1}
+                                    </div>
+                                    <div className="flex-grow">
+                                        <p className="font-bold text-lg flex items-center gap-2">
+                                            {player.name}
+                                            {isPlayerHost && <Crown className="h-5 w-5 text-yellow-400" />}
+                                        </p>
+                                        <p className="text-sm text-foreground/70">
+                                            Série max: <span className="font-semibold">{player.streak}</span>
+                                        </p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-2xl font-bold text-primary">{player.score} pts</p>
+                                    </div>
+                                </Card>
+                            )
+                        })}
                     </div>
                 </CardContent>
             </Card>
@@ -169,22 +182,30 @@ function GameResults() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {players.map(player => (
-                                    <TableRow key={player.id}>
-                                        <TableCell className="font-medium">{player.name}</TableCell>
-                                        <TableCell className="text-center font-bold">{player.score}</TableCell>
-                                        <TableCell className="text-center">{player.streak}</TableCell>
-                                        <TableCell className="flex justify-center gap-2">
-                                            {Array.from({ length: questionCount }).map((_, qIndex) => {
-                                                const answer = player.answers.find(a => a.questionIndex === qIndex);
-                                                if (!answer) return <Badge key={qIndex} variant="outline" className="h-6 w-6 p-0 flex items-center justify-center">-</Badge>;
-                                                return answer.isCorrect
-                                                    ? <CheckCircle2 key={qIndex} className="h-6 w-6 text-green-500" />
-                                                    : <XCircle key={qIndex} className="h-6 w-6 text-red-500" />;
-                                            })}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                {players.map(player => {
+                                     const isPlayerHost = player.name === hostName;
+                                    return (
+                                        <TableRow key={player.id}>
+                                            <TableCell className="font-medium">
+                                                <div className="flex items-center gap-2">
+                                                    {player.name}
+                                                    {isPlayerHost && <Crown className="h-4 w-4 text-yellow-400" />}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-center font-bold">{player.score}</TableCell>
+                                            <TableCell className="text-center">{player.streak}</TableCell>
+                                            <TableCell className="flex justify-center gap-2">
+                                                {Array.from({ length: questionCount }).map((_, qIndex) => {
+                                                    const answer = player.answers.find(a => a.questionIndex === qIndex);
+                                                    if (!answer) return <Badge key={qIndex} variant="outline" className="h-6 w-6 p-0 flex items-center justify-center">-</Badge>;
+                                                    return answer.isCorrect
+                                                        ? <CheckCircle2 key={qIndex} className="h-6 w-6 text-green-500" />
+                                                        : <XCircle key={qIndex} className="h-6 w-6 text-red-500" />;
+                                                })}
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })}
                             </TableBody>
                         </Table>
                     </CardContent>
