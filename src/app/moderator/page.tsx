@@ -1,5 +1,4 @@
-// This page is obsolete now that we use dynamic routes for moderator lobbies.
-// It can be removed or kept as a fallback. For now, we'll just make it redirect.
+
 'use client';
 
 import { useEffect } from 'react';

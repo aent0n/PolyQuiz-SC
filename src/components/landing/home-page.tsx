@@ -38,16 +38,16 @@ export function HomePage() {
             <LogIn className="mr-2" /> Rejoindre un Salon
           </Button>
         </Link>
-         <Link href="/quiz/creator" passHref className="w-full max-w-sm">
-           <Button className="w-full text-lg py-6" variant="outline">
+         <div className="w-full max-w-sm">
+           <Button className="w-full text-lg py-6" variant="outline" disabled>
             <PenSquare className="mr-2" /> Créer un Quiz
           </Button>
-        </Link>
-        <Link href="/moderator" passHref className="w-full max-w-sm">
-           <Button className="w-full text-lg py-6" variant="ghost">
+        </div>
+        <div className="w-full max-w-sm">
+           <Button className="w-full text-lg py-6" variant="ghost" disabled>
             <Shield className="mr-2" /> Vue Modérateur
           </Button>
-        </Link>
+        </div>
          <Link href="/quiz" passHref className="w-full max-w-sm">
            <Button className="w-full text-lg py-6" variant="ghost">
             Jeu Solo
