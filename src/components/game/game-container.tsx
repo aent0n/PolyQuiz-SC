@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { doc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, getDoc, runTransaction } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2, XCircle, Flame, Star, ChevronsRight } from 'lucide-react';
 import type { LobbyData, PlayerState } from '@/types/quiz';
@@ -26,30 +26,34 @@ function HostControls({ lobbyId }: { lobbyId: string }) {
   const handleNextQuestion = async () => {
     const lobbyDocRef = doc(db, 'lobbies', lobbyId);
     try {
-        const lobbySnap = await getDoc(lobbyDocRef);
-        if (!lobbySnap.exists()) return;
+       await runTransaction(db, async (transaction) => {
+        const lobbySnap = await transaction.get(lobbyDocRef);
+        if (!lobbySnap.exists()) {
+          throw "Le salon n'existe pas !";
+        }
 
         const lobbyData = lobbySnap.data() as LobbyData;
         const nextIndex = lobbyData.gameState.currentQuestionIndex + 1;
 
         if (nextIndex >= lobbyData.quiz.length) {
-            await updateDoc(lobbyDocRef, {
+           transaction.update(lobbyDocRef, {
                 'gameState.phase': 'finished',
                 status: 'finished',
             });
         } else {
-             await updateDoc(lobbyDocRef, {
+             transaction.update(lobbyDocRef, {
                 'gameState.phase': 'question',
                 'gameState.currentQuestionIndex': nextIndex,
             });
         }
+      });
     } catch(e) {
         console.error("Erreur lors du passage à la question suivante:", e);
     }
   };
 
   const handleNullifyQuestion = async () => {
-    // This action will just move to the next question without scoring.
+    // Cette action passera à la question suivante sans attribuer de points.
     await handleNextQuestion();
   };
 
