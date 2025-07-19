@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { LogIn, PlusCircle, Shield, PenSquare, Rocket, GitCommitHorizontal } from 'lucide-react';
+import { LogIn, PlusCircle, Shield, PenSquare, Rocket, GitCommitHorizontal, BookOpenCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -58,29 +58,29 @@ export function HomePage() {
         <Dialog>
           <DialogTrigger asChild>
             <Badge variant="outline" className="text-xs cursor-pointer hover:bg-accent">
-                v0.9
+                v1.0
             </Badge>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle className="text-primary text-2xl">Notes de version v0.9</DialogTitle>
+              <DialogTitle className="text-primary text-2xl">Notes de version v1.0</DialogTitle>
               <DialogDescription>
-                L'hôte est maintenant un joueur à part entière ! Voici les changements majeurs.
+                Les quiz sont maintenant plus intelligents et parlent français !
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="flex items-start gap-4">
                 <Rocket className="h-5 w-5 text-primary mt-1" />
                 <div>
-                  <h4 className="font-semibold">L'hôte participe au jeu</h4>
-                  <p className="text-sm text-muted-foreground">Fini la vue modérateur passive ! L'hôte joue, répond aux questions et est classé comme tout le monde.</p>
+                  <h4 className="font-semibold">Quiz en Français</h4>
+                  <p className="text-sm text-muted-foreground">Toutes les questions, réponses et options sont maintenant générées en français pour une meilleure immersion.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
-                <GitCommitHorizontal className="h-5 w-5 text-primary mt-1" />
+                <BookOpenCheck className="h-5 w-5 text-primary mt-1" />
                 <div>
-                  <h4 className="font-semibold">Correction des bugs de flux</h4>
-                  <p className="text-sm text-muted-foreground">Résolution des problèmes où la partie se bloquait ou sautait des questions.</p>
+                  <h4 className="font-semibold">Explications des Réponses</h4>
+                  <p className="text-sm text-muted-foreground">Après chaque question, découvrez un fait amusant ou une explication sur la bonne réponse pour parfaire vos connaissances.</p>
                 </div>
               </div>
             </div>
