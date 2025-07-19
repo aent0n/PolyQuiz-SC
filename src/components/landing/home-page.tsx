@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { LogIn, PlusCircle, Shield, PenSquare, Rocket, GitCommitHorizontal, BookOpenCheck } from 'lucide-react';
+import { LogIn, PlusCircle, Shield, PenSquare, Rocket, GitCommitHorizontal, BookOpenCheck, List } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -58,29 +58,36 @@ export function HomePage() {
         <Dialog>
           <DialogTrigger asChild>
             <Badge variant="outline" className="text-xs cursor-pointer hover:bg-accent">
-                v1.0
+                v1.1
             </Badge>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle className="text-primary text-2xl">Notes de version v1.0</DialogTitle>
+              <DialogTitle className="text-primary text-2xl">Notes de version v1.1</DialogTitle>
               <DialogDescription>
-                Les quiz sont maintenant plus intelligents et parlent français !
+                Plus de thèmes pour plus de fun !
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="flex items-start gap-4">
+                <List className="h-5 w-5 text-primary mt-1" />
+                <div>
+                  <h4 className="font-semibold">Plus de Thématiques</h4>
+                  <p className="text-sm text-muted-foreground">De nouveaux sujets de quiz ont été ajoutés (vaisseaux, lieux, etc.) ainsi qu'une option "Mélange de tout" pour varier les plaisirs.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
                 <Rocket className="h-5 w-5 text-primary mt-1" />
                 <div>
                   <h4 className="font-semibold">Quiz en Français</h4>
-                  <p className="text-sm text-muted-foreground">Toutes les questions, réponses et options sont maintenant générées en français pour une meilleure immersion.</p>
+                  <p className="text-sm text-muted-foreground">Les questions sont maintenant générées en français, avec une touche de "franglais" pour les termes techniques, pour une meilleure immersion.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
                 <BookOpenCheck className="h-5 w-5 text-primary mt-1" />
                 <div>
-                  <h4 className="font-semibold">Explications des Réponses</h4>
-                  <p className="text-sm text-muted-foreground">Après chaque question, découvrez un fait amusant ou une explication sur la bonne réponse pour parfaire vos connaissances.</p>
+                  <h4 className="font-semibold">Explications de Lore</h4>
+                  <p className="text-sm text-muted-foreground">Après chaque question, découvrez une explication riche en lore pour parfaire vos connaissances de l'univers.</p>
                 </div>
               </div>
             </div>

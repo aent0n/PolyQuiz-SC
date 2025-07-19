@@ -35,11 +35,15 @@ const formSchema = z.object({
 export type QuizSetupFormValues = z.infer<typeof formSchema>;
 
 const topics = [
-  { value: 'lore', label: 'Lore' },
-  { value: 'locations', label: 'Lieux d\'intérêt' },
-  { value: 'resources', label: 'Ressources' },
-  { value: 'ships', label: 'Vaisseaux' },
-  { value: 'organizations', label: 'Organisations' },
+    { value: 'un mélange de tout', label: 'Mélange de tout' },
+    { value: 'lore', label: 'Lore' },
+    { value: 'lieux d\'intérêt', label: 'Lieux d\'intérêt' },
+    { value: 'vaisseaux', label: 'Vaisseaux' },
+    { value: 'organisations', label: 'Organisations' },
+    { value: 'mécaniques de jeu', label: 'Mécaniques de jeu' },
+    { value: 'histoire de l\'UEE', label: 'Histoire de l\'UEE' },
+    { value: 'races aliens', label: 'Races Aliens' },
+    { value: 'systèmes stellaires', label: 'Systèmes Stellaires' },
 ];
 
 const questionOptions = [3, 5, 10];
@@ -86,7 +90,7 @@ export function QuizSetupForm({ onSubmit, isLoading, showHeader = true, showPlay
   const form = useForm<CustomFormValues>({
     resolver: zodResolver(customFormSchema),
     defaultValues: {
-      topic: 'lore',
+      topic: 'un mélange de tout',
       numQuestionsSelect: '5',
       timerSelect: '15',
       numQuestionsCustom: undefined,
