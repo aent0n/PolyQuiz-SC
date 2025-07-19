@@ -66,14 +66,16 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
       const calculateScores = async () => {
           try {
               const answersQuery = query(collection(db, 'lobbies', lobbyId, 'answers'), where('questionIndex', '==', currentQuestionIndex));
-              const answersSnapshot = await getDocs(answersQuery);
-              const currentAnswers = answersSnapshot.docs.map(doc => doc.data() as { playerName: string; isCorrect: boolean });
-
+              
               await runTransaction(db, async (transaction) => {
                   const marker = await transaction.get(scoreCalculatedMarkerRef);
                   if (marker.exists()) {
+                      console.log(`Scores for question ${currentQuestionIndex} already calculated.`);
                       return; // Scores already calculated
                   }
+
+                  const answersSnapshot = await getDocs(answersQuery);
+                  const currentAnswers = answersSnapshot.docs.map(doc => doc.data() as { playerName: string; isCorrect: boolean });
                   
                   if (currentAnswers.length === 0) {
                       transaction.set(scoreCalculatedMarkerRef, { calculatedAt: new Date() });
@@ -129,16 +131,13 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
 
     if (timeLeft <= 0) {
       const lobbyDocRef = doc(db, 'lobbies', lobbyId);
-       // Only the host should be responsible for changing the phase
       getDoc(lobbyDocRef).then(lobbySnap => {
-        if (lobbySnap.exists() && lobbySnap.data().gameState.phase === 'question') {
-          // Check if current user is host before updating.
-          // In this simplified component structure, we don't know who is host.
-          // The robust way is to let the host control this, but for now we let anyone trigger it.
-          // This can be improved by passing an isHost prop.
-          updateDoc(lobbyDocRef, {
-            'gameState.phase': 'reveal',
-          });
+        if (lobbySnap.exists() && lobbySnap.data().hostName === playerName) {
+           if (lobbySnap.data().gameState.phase === 'question') {
+             updateDoc(lobbyDocRef, {
+                'gameState.phase': 'reveal',
+             });
+           }
         }
       });
       return;
@@ -149,7 +148,7 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
     }, 1000);
 
     return () => clearInterval(timerId);
-  }, [timeLeft, isAnswerPhase, lobbyId]);
+  }, [timeLeft, isAnswerPhase, lobbyId, playerName]);
 
 
   if (!currentQuestion) {
@@ -196,7 +195,7 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
                 "h-auto w-full justify-start p-4 text-left whitespace-normal text-base transition-all duration-300 border-2 border-transparent",
                 getButtonClass(option)
               )}
-              disabled={!isAnswerPhase || !!selectedAnswer}
+              disabled={!isAnswerPhase}
             >
               {option}
             </Button>
