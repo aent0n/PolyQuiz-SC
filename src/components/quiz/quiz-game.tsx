@@ -83,7 +83,11 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
                   }
 
                   const playerRefs = currentAnswers.map(answer => doc(db, 'lobbies', lobbyId, 'players', answer.playerName));
-                  const playerDocs = await Promise.all(playerRefs.map(ref => transaction.get(ref)));
+                  
+                  const playerDocs = [];
+                  for(const ref of playerRefs) {
+                    playerDocs.push(await transaction.get(ref));
+                  }
 
                   for (let i = 0; i < currentAnswers.length; i++) {
                       const answer = currentAnswers[i];
@@ -130,9 +134,11 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
     if (!isAnswerPhase) return;
 
     if (timeLeft <= 0) {
+      // Only the host should be responsible for ending the question phase
       const lobbyDocRef = doc(db, 'lobbies', lobbyId);
       getDoc(lobbyDocRef).then(lobbySnap => {
         if (lobbySnap.exists() && lobbySnap.data().hostName === playerName) {
+           // Double-check phase to prevent race conditions
            if (lobbySnap.data().gameState.phase === 'question') {
              updateDoc(lobbyDocRef, {
                 'gameState.phase': 'reveal',
