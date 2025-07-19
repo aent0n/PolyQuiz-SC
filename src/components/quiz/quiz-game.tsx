@@ -185,11 +185,14 @@ export function QuizGame({
   }, [phase, currentQuestionIndex, lobbyId, isMultiplayer, onScoreUpdate, onStreakUpdate, onCorrectAnswer, selectedAnswer, currentQuestion]);
 
 
-  if (!currentQuestion) {
-     useEffect(() => {
-       onFinish();
-     }, [onFinish]);
+  useEffect(() => {
+    if (!currentQuestion) {
+      onFinish();
+    }
+  }, [currentQuestion, onFinish]);
 
+
+  if (!currentQuestion) {
     return null;
   }
 
