@@ -153,7 +153,7 @@ export default function ModeratorLobbyPage() {
           <CardHeader>
              <div className="flex justify-between items-start">
                 <div className="flex-1 text-center">
-                    <CardTitle className="text-3xl text-primary font-headline">Salon du Modérateur</CardTitle>
+                    <CardTitle className="text-3xl text-primary font-headline">Salon de pré-partie</CardTitle>
                     <CardDescription className="text-lg text-foreground/80">
                         Code du salon : <span className="font-bold text-primary tracking-widest">{lobbyId}</span>
                     </CardDescription>
