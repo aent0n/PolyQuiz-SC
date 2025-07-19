@@ -47,7 +47,11 @@ export default function QuizPage() {
             });
         }, 1000);
     }
-    return () => clearInterval(timerRef.current);
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
 
   }, [gameState?.phase, gameState?.currentQuestionIndex, timer]);
 
