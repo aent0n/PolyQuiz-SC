@@ -35,7 +35,7 @@ const formSchema = z.object({
 export type QuizSetupFormValues = z.infer<typeof formSchema>;
 
 const topics = [
-    { value: 'un mélange de tout', label: 'Mélange de tout' },
+    { value: 'mix', label: 'Mix' },
     { value: 'lore', label: 'Lore' },
     { value: 'lieux d\'intérêt', label: 'Lieux d\'intérêt' },
     { value: 'vaisseaux', label: 'Vaisseaux' },
@@ -90,7 +90,7 @@ export function QuizSetupForm({ onSubmit, isLoading, showHeader = true, showPlay
   const form = useForm<CustomFormValues>({
     resolver: zodResolver(customFormSchema),
     defaultValues: {
-      topic: 'un mélange de tout',
+      topic: 'mix',
       numQuestionsSelect: '5',
       timerSelect: '15',
       numQuestionsCustom: undefined,
