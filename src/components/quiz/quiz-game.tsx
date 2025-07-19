@@ -31,6 +31,7 @@ interface QuizGameProps {
   // Solo-specific props
   onNextQuestion?: () => void;
   onScoreUpdate?: React.Dispatch<React.SetStateAction<number>>;
+  onStreakUpdate?: React.Dispatch<React.SetStateAction<number>>;
 }
 
 
@@ -48,7 +49,8 @@ export function QuizGame({
   gameState, 
   timeLeft,
   onNextQuestion,
-  onScoreUpdate
+  onScoreUpdate,
+  onStreakUpdate
 }: QuizGameProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   
@@ -97,10 +99,20 @@ export function QuizGame({
   useEffect(() => {
       if (phase !== 'reveal' || !currentQuestion) return;
 
-      if (!isMultiplayer && onScoreUpdate) {
+      if (!isMultiplayer && onScoreUpdate && onStreakUpdate) {
         // --- SOLO MODE SCORE CALCULATION ---
         if (selectedAnswer === currentQuestion.answer) {
-          onScoreUpdate(prevScore => prevScore + BASE_POINTS);
+          onStreakUpdate(prevStreak => {
+            const newStreak = prevStreak + 1;
+            let pointsGained = BASE_POINTS;
+            if (newStreak >= STREAK_BONUS_THRESHOLD) {
+              pointsGained += STREAK_BONUS_POINTS;
+            }
+            onScoreUpdate(prevScore => prevScore + pointsGained);
+            return newStreak;
+          });
+        } else {
+          onStreakUpdate(0);
         }
         return; // End of solo mode logic
       }
@@ -167,7 +179,7 @@ export function QuizGame({
         calculateScores();
       }
 
-  }, [phase, currentQuestionIndex, lobbyId, isMultiplayer, onScoreUpdate, selectedAnswer, currentQuestion]);
+  }, [phase, currentQuestionIndex, lobbyId, isMultiplayer, onScoreUpdate, onStreakUpdate, selectedAnswer, currentQuestion]);
 
 
   if (!currentQuestion) {

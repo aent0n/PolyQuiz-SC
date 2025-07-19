@@ -11,6 +11,7 @@ import { QuizResults } from '@/components/quiz/quiz-results';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { SoloGameHud } from '@/components/quiz/solo-game-hud';
 
 export default function QuizPage() {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -21,6 +22,8 @@ export default function QuizPage() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [score, setScore] = useState(0);
+  const [streak, setStreak] = useState(0);
+
 
   const timerRef = useRef<NodeJS.Timeout>();
 
@@ -59,6 +62,7 @@ export default function QuizPage() {
       setQuiz(result.quiz);
       setGameState({ currentQuestionIndex: 0, phase: 'question' });
       setScore(0);
+      setStreak(0);
     } catch (error) {
       console.error(error);
       toast({
@@ -79,6 +83,7 @@ export default function QuizPage() {
     setQuiz(null);
     setGameState(null);
     setScore(0);
+    setStreak(0);
   }
 
   const handleNextQuestion = () => {
@@ -98,16 +103,20 @@ export default function QuizPage() {
     }
     if (quiz && gameState) {
       return (
-        <QuizGame 
-          quiz={quiz} 
-          topic={topic} 
-          onFinish={handleQuizFinish} 
-          timer={timer} 
-          gameState={gameState}
-          timeLeft={timeLeft}
-          onNextQuestion={handleNextQuestion}
-          onScoreUpdate={setScore}
-        />
+        <>
+          <SoloGameHud score={score} streak={streak} />
+          <QuizGame 
+            quiz={quiz} 
+            topic={topic} 
+            onFinish={handleQuizFinish} 
+            timer={timer} 
+            gameState={gameState}
+            timeLeft={timeLeft}
+            onNextQuestion={handleNextQuestion}
+            onScoreUpdate={setScore}
+            onStreakUpdate={setStreak}
+          />
+        </>
       );
     }
     return (
