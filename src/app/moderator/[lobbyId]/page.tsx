@@ -6,7 +6,7 @@ import { doc, onSnapshot, collection, deleteDoc, updateDoc, getDocs, writeBatch 
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Users, QrCode } from 'lucide-react';
+import { LogOut, Loader2, Users, QrCode } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -203,9 +203,9 @@ export default function ModeratorLobbyPage() {
               </>
             )}
              <div className="text-center mt-8">
-                <Button variant="outline" onClick={handleCloseLobby}>
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Quitter et fermer le salon
+                <Button variant="destructive" onClick={handleCloseLobby}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Fermer le salon et retourner à l'accueil
                 </Button>
             </div>
           </CardContent>

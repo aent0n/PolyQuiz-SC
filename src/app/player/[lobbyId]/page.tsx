@@ -5,7 +5,7 @@ import { Suspense, useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { doc, onSnapshot, setDoc, collection, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Loader2 } from 'lucide-react';
+import { LogOut, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -148,11 +148,14 @@ function PlayerLobbyContent() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-6">
               <p className="text-xl font-bold">Bienvenue, {playerName} !</p>
-              <p className="text-lg text-foreground/80 mt-2">En attente du lancement de la partie par l'hôte...</p>
-              <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mt-4" />
-              <Button variant="outline" size="sm" onClick={handleLeave}>Quitter le salon</Button>
+              <p className="text-lg text-foreground/80">En attente du lancement de la partie par l'hôte...</p>
+              <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+              <Button variant="outline" onClick={handleLeave}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Quitter et retourner à l'accueil
+              </Button>
           </div>
         </CardContent>
       </Card>
