@@ -69,27 +69,6 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
     return () => unsubscribe();
   }, [lobbyId]);
 
-  // Effect to check if all players have answered
-  useEffect(() => {
-    if (!isAnswerPhase || playerCount === 0) return;
-
-    const answersColRef = collection(db, 'lobbies', lobbyId, 'answers');
-    const unsubscribe = onSnapshot(answersColRef, async (snapshot) => {
-      const currentQuestionAnswers = snapshot.docs.filter(doc => doc.data().questionIndex === currentQuestionIndex);
-      if (currentQuestionAnswers.length >= playerCount) {
-        const lobbyDocRef = doc(db, 'lobbies', lobbyId);
-        const lobbySnap = await getDoc(lobbyDocRef);
-        if (lobbySnap.exists() && lobbySnap.data().gameState.phase === 'question') {
-          await updateDoc(lobbyDocRef, {
-            'gameState.phase': 'reveal',
-          });
-        }
-      }
-    });
-
-    return () => unsubscribe();
-
-  }, [isAnswerPhase, lobbyId, currentQuestionIndex, playerCount]);
 
   // Score calculation effect
   useEffect(() => {
@@ -238,7 +217,7 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
         </div>
         <div className="text-center text-foreground/60 h-6">
           {isAnswerPhase && !!selectedAnswer && <p>Réponse sélectionnée. Vous pouvez changer tant que le temps n'est pas écoulé.</p>}
-          {!isAnswerPhase && <p>Les réponses sont verrouillées. En attente de l'hôte...</p>}
+          {!isAnswerPhase && <p>Les réponses sont verrouillées. En attente de la révélation...</p>}
         </div>
       </CardContent>
     </Card>
