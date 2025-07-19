@@ -189,7 +189,7 @@ export default function ModeratorLobbyPage() {
                     <CardTitle className="text-xl">Détails du Quiz</CardTitle>
                   </CardHeader>
                   <CardContent className="flex justify-center items-center gap-8 text-lg">
-                    <p>Sujet : <span className="font-semibold capitalize">{lobbyData.topic === 'mix' ? 'Mix' : lobbyData.topic}</span></p>
+                    <p>Thème : <span className="font-semibold capitalize">{lobbyData.topic === 'mix' ? 'Mix' : lobbyData.topic}</span></p>
                     <p>Questions : <span className="font-semibold">{lobbyData.quiz.length}</span></p>
                     <p>Timer : <span className="font-semibold">{lobbyData.timer} secondes</span></p>
                   </CardContent>

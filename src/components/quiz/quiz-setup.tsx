@@ -143,11 +143,11 @@ export function QuizSetupForm({ onSubmit, isLoading, showHeader = true, showPlay
               name="topic"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Sujet</FormLabel>
+                  <FormLabel>Thème</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Sélectionnez un sujet" />
+                        <SelectValue placeholder="Sélectionnez un thème" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
