@@ -153,8 +153,11 @@ export function GameContainer() {
                 }
 
                 if (data.status === 'finished' || (data.gameState && data.gameState.phase === 'finished')) {
-                    // TODO: Redirect to a results page instead of home
-                    router.push('/'); 
+                    let url = `/results/${lobbyId}`;
+                    const params = new URLSearchParams();
+                    if(role) params.set('role', role);
+                    if(playerName) params.set('playerName', playerName);
+                    router.push(`${url}?${params.toString()}`);
                 }
             } else {
                 setError('La partie a été terminée ou n\'existe plus.');
@@ -168,7 +171,7 @@ export function GameContainer() {
         });
 
         return () => unsubscribeLobby();
-    }, [lobbyId, router, isHost, playerName]);
+    }, [lobbyId, router, isHost, playerName, role]);
 
     useEffect(() => {
         let unsubscribePlayer: (() => void) | undefined;

@@ -7,9 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import type { Quiz, QuizQuestion, GameState, PlayerState } from '@/types/quiz';
-import { QuizResults } from './quiz-results';
 import { db } from '@/lib/firebase';
-import { doc, setDoc, updateDoc, collection, onSnapshot, getDocs, writeBatch, getDoc, runTransaction } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, collection, onSnapshot, getDocs, getDoc, runTransaction } from 'firebase/firestore';
 
 interface QuizGameProps {
   lobbyId: string;
@@ -29,8 +28,6 @@ const STREAK_BONUS_POINTS = 5;
 export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId, playerName, gameState }: QuizGameProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(timer);
-  const [playerCount, setPlayerCount] = useState(0);
-  const [score, setScore] = useState(0); // Used for final results screen
 
   const { currentQuestionIndex, phase } = gameState;
   const currentQuestion: QuizQuestion | undefined = quiz[currentQuestionIndex];
@@ -60,30 +57,34 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
     }
   }
 
-  // Effect to get player count
-  useEffect(() => {
-    const playersColRef = collection(db, 'lobbies', lobbyId, 'players');
-    const unsubscribe = onSnapshot(playersColRef, (snapshot) => {
-      setPlayerCount(snapshot.size);
-    });
-    return () => unsubscribe();
-  }, [lobbyId]);
-
-
   // Score calculation effect
   useEffect(() => {
+      // We only want to run score calculation once when moving to the 'reveal' phase.
+      // We add a check for a marker document to prevent re-calculation on client re-renders.
       if (phase !== 'reveal') return;
 
+      const scoreCalculatedMarkerRef = doc(db, 'lobbies', lobbyId, 'answers', `score-calculated-${currentQuestionIndex}`);
+
       const calculateScores = async () => {
-          const answersQuerySnapshot = await getDocs(collection(db, 'lobbies', lobbyId, 'answers'));
-          const currentAnswers = answersQuerySnapshot.docs
-              .map(doc => ({ id: doc.id, ...doc.data() }))
-              .filter(a => a.questionIndex === currentQuestionIndex);
-
-          if (currentAnswers.length === 0) return; // No answers to process
-
           try {
               await runTransaction(db, async (transaction) => {
+                  const marker = await transaction.get(scoreCalculatedMarkerRef);
+                  if (marker.exists()) {
+                      // Scores for this question have already been calculated.
+                      return;
+                  }
+
+                  const answersQuerySnapshot = await getDocs(collection(db, 'lobbies', lobbyId, 'answers'));
+                  const currentAnswers = answersQuerySnapshot.docs
+                      .map(doc => ({ id: doc.id, ...doc.data() }))
+                      .filter(a => a.questionIndex === currentQuestionIndex);
+
+                  if (currentAnswers.length === 0) {
+                       // Mark as calculated even if no answers, to prevent re-runs
+                      transaction.set(scoreCalculatedMarkerRef, { calculatedAt: new Date() });
+                      return;
+                  }
+
                   for (const answer of currentAnswers) {
                       const playerDocRef = doc(db, 'lobbies', lobbyId, 'players', answer.playerName);
                       const playerDoc = await transaction.get(playerDocRef);
@@ -106,17 +107,10 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
                       }
                       transaction.update(playerDocRef, { score: newScore, streak: newStreak });
                   }
+
+                  // Set the marker to indicate scores have been calculated for this question
+                  transaction.set(scoreCalculatedMarkerRef, { calculatedAt: new Date() });
               });
-
-              // Update local score for final results display if current player is involved
-              if(playerName) {
-                  const playerDocRef = doc(db, 'lobbies', lobbyId, 'players', playerName);
-                  const finalPlayerDoc = await getDoc(playerDocRef);
-                  if(finalPlayerDoc.exists()) {
-                      setScore(finalPlayerDoc.data().score);
-                  }
-              }
-
           } catch (error) {
               console.error("Transaction failed: ", error);
           }
@@ -124,7 +118,7 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
 
       calculateScores();
 
-  }, [phase, currentQuestionIndex, lobbyId, playerName]);
+  }, [phase, currentQuestionIndex, lobbyId]);
 
 
   useEffect(() => {
@@ -138,6 +132,8 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
 
     if (timeLeft <= 0) {
       const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+      // Ensure only one client (or the host ideally) triggers the update
+      // This could be improved by making it a host-only action
       getDoc(lobbyDocRef).then(lobbySnap => {
           if (lobbySnap.exists() && lobbySnap.data().gameState.phase === 'question') {
              updateDoc(lobbyDocRef, {
@@ -157,20 +153,14 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
 
 
   if (!currentQuestion) {
-    // Attempt to fetch final score for results screen
-    useEffect(() => {
-      const fetchFinalScore = async () => {
-        if(playerName) {
-          const playerDocRef = doc(db, 'lobbies', lobbyId, 'players', playerName);
-          const docSnap = await getDoc(playerDocRef);
-          if (docSnap.exists()) {
-            setScore(docSnap.data().score);
-          }
-        }
-      }
-      fetchFinalScore();
-    }, [lobbyId, playerName]);
-    return <QuizResults score={score} total={quiz.length * BASE_POINTS} onRestart={onFinish} />;
+    // This now just signals that this client is done.
+    // The redirect will be handled by the game container.
+    // This avoids rendering QuizResults which is now obsolete.
+     useEffect(() => {
+       onFinish();
+     }, [onFinish]);
+
+    return null;
   }
 
   const getButtonClass = (option: string) => {
@@ -209,15 +199,15 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
                 "h-auto w-full justify-start p-4 text-left whitespace-normal text-base transition-all duration-300 border-2 border-transparent",
                 getButtonClass(option)
               )}
-              disabled={!isAnswerPhase}
+              disabled={!isAnswerPhase || !!selectedAnswer}
             >
               {option}
             </Button>
           ))}
         </div>
         <div className="text-center text-foreground/60 h-6">
-          {isAnswerPhase && !!selectedAnswer && <p>Réponse sélectionnée. Vous pouvez changer tant que le temps n'est pas écoulé.</p>}
-          {!isAnswerPhase && <p>Les réponses sont verrouillées. En attente de la révélation...</p>}
+          {isAnswerPhase && !!selectedAnswer && <p>Réponse enregistrée. En attente de la fin du temps...</p>}
+          {!isAnswerPhase && <p>Les réponses sont verrouillées. Révélation des scores...</p>}
         </div>
       </CardContent>
     </Card>

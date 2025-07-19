@@ -1,18 +1,21 @@
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Award, RotateCw, TrendingDown, TrendingUp } from 'lucide-react';
+import { Award, RotateCw, TrendingDown, TrendingUp, Home } from 'lucide-react';
 import { useMemo } from 'react';
+import Link from 'next/link';
 
 interface QuizResultsProps {
   score: number;
-  total: number;
+  totalQuestions: number;
   onRestart: () => void;
 }
 
-export function QuizResults({ score, total, onRestart }: QuizResultsProps) {
-  const percentage = Math.round((score / total) * 100);
+export function QuizResults({ score, totalQuestions, onRestart }: QuizResultsProps) {
+  const totalPossibleScore = totalQuestions * 10; // Assuming 10 points per question
+  const percentage = totalPossibleScore > 0 ? Math.round((score / totalPossibleScore) * 100) : 0;
 
   const feedback = useMemo(() => {
     if (percentage === 100) {
@@ -55,13 +58,21 @@ export function QuizResults({ score, total, onRestart }: QuizResultsProps) {
         </div>
         <div className="text-center">
             <p className="text-lg text-foreground/80">Votre Score</p>
-            <p className="text-7xl font-bold text-primary">{score}<span className="text-3xl text-foreground/60">/{total}</span></p>
-            <p className="text-2xl font-medium text-accent">{percentage}%</p>
+            <p className="text-7xl font-bold text-primary">{score}<span className="text-3xl text-foreground/60">/{totalPossibleScore}</span></p>
+            <p className="text-2xl font-medium text-accent-foreground">{percentage}%</p>
         </div>
-        <Button onClick={onRestart} className="w-full max-w-xs text-lg py-6">
-          <RotateCw className="mr-2 h-5 w-5" />
-          Rejouer
-        </Button>
+        <div className="flex flex-col gap-4 w-full max-w-xs">
+            <Button onClick={onRestart} className="w-full text-lg py-6">
+              <RotateCw className="mr-2 h-5 w-5" />
+              Rejouer (Solo)
+            </Button>
+             <Button asChild variant="outline" className="w-full text-lg py-6">
+                <Link href="/">
+                    <Home className="mr-2 h-5 w-5" />
+                    Accueil
+                </Link>
+            </Button>
+        </div>
       </CardContent>
     </Card>
   );
