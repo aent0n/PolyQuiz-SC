@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { doc, onSnapshot, updateDoc, getDoc, runTransaction } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -131,11 +131,13 @@ export function GameContainer() {
     const isHost = role === 'moderator';
 
     const [playerName, setPlayerName] = useState<string | null>(searchParams.get('playerName'));
-
     const [lobbyData, setLobbyData] = useState<LobbyData | null>(null);
     const [playerState, setPlayerState] = useState<PlayerState | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [timeLeft, setTimeLeft] = useState(0);
+
+    const timerRef = useRef<NodeJS.Timeout>();
 
     useEffect(() => {
         if (!lobbyId) return;
@@ -185,6 +187,34 @@ export function GameContainer() {
             if (unsubscribePlayer) unsubscribePlayer();
         }
     }, [lobbyId, playerName]);
+    
+    // The One True Timer Logic - Only in the GameContainer
+    useEffect(() => {
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+        }
+
+        if (lobbyData?.gameState?.phase === 'question') {
+            setTimeLeft(lobbyData.timer);
+            
+            timerRef.current = setInterval(() => {
+                setTimeLeft(prevTime => {
+                    if (prevTime <= 1) {
+                        clearInterval(timerRef.current);
+                        // Only host updates the game state to prevent race conditions
+                        if (isHost && lobbyId) {
+                            const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+                            updateDoc(lobbyDocRef, { 'gameState.phase': 'reveal' });
+                        }
+                        return 0;
+                    }
+                    return prevTime - 1;
+                });
+            }, 1000);
+        }
+        return () => clearInterval(timerRef.current);
+
+    }, [lobbyData?.gameState, lobbyData?.timer, isHost, lobbyId]);
 
 
     const handleFinish = async () => {
@@ -225,6 +255,7 @@ export function GameContainer() {
                 timer={timer}
                 onFinish={handleFinish}
                 gameState={gameState}
+                timeLeft={timeLeft} // Pass the time down
             />
             {isHost && gameState.phase === 'reveal' && (
                 <HostControls lobbyId={lobbyId} />

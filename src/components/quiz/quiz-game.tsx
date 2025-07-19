@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -16,22 +16,31 @@ interface QuizGameProps {
   quiz: Quiz;
   topic: string;
   onFinish: () => void;
-  timer?: number;
+  timer: number;
   gameState: GameState;
+  timeLeft: number;
 }
 
-const QUESTION_TIME = 15; // default seconds
 const STREAK_BONUS_THRESHOLD = 3;
 const BASE_POINTS = 10;
 const STREAK_BONUS_POINTS = 5;
 
-export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId, playerName, gameState }: QuizGameProps) {
+export function QuizGame({ quiz, topic, onFinish, timer, lobbyId, playerName, gameState, timeLeft }: QuizGameProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [timeLeft, setTimeLeft] = useState(timer);
-
+  
   const { currentQuestionIndex, phase } = gameState;
   const currentQuestion: QuizQuestion | undefined = quiz[currentQuestionIndex];
   const isAnswerPhase = phase === 'question';
+
+  const previousQuestionIndex = useRef<number>();
+
+  useEffect(() => {
+    // This effect ensures local state is reset ONLY when the question actually changes.
+    if (previousQuestionIndex.current !== currentQuestionIndex) {
+      setSelectedAnswer(null);
+      previousQuestionIndex.current = currentQuestionIndex;
+    }
+  }, [currentQuestionIndex]);
 
   const submitAnswer = useCallback(async (answer: string) => {
     if (!playerName || !isAnswerPhase || !currentQuestion) return;
@@ -123,33 +132,6 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
       calculateScores();
 
   }, [phase, currentQuestionIndex, lobbyId]);
-
-
-  // Effect to reset state when a new question is loaded
-  useEffect(() => {
-    setSelectedAnswer(null);
-    setTimeLeft(timer);
-  }, [currentQuestionIndex, timer]);
-
-  // Timer countdown effect
-  useEffect(() => {
-    if (timeLeft <= 0 && isAnswerPhase) {
-      // Time is up, move to reveal phase
-      const lobbyDocRef = doc(db, 'lobbies', lobbyId);
-      updateDoc(lobbyDocRef, { 'gameState.phase': 'reveal' });
-      return;
-    }
-
-    if (!isAnswerPhase) {
-      return;
-    }
-
-    const timerId = setInterval(() => {
-      setTimeLeft((t) => t - 1);
-    }, 1000);
-
-    return () => clearInterval(timerId);
-  }, [timeLeft, isAnswerPhase, lobbyId]);
 
 
   if (!currentQuestion) {
