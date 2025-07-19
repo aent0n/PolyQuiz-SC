@@ -80,11 +80,9 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
                       return;
                   }
 
-                  // 1. READ PHASE: Get all player documents first.
                   const playerRefs = currentAnswers.map(answer => doc(db, 'lobbies', lobbyId, 'players', answer.playerName));
                   const playerDocs = await Promise.all(playerRefs.map(ref => transaction.get(ref)));
 
-                  // 2. WRITE PHASE: Now perform all updates.
                   for (let i = 0; i < currentAnswers.length; i++) {
                       const answer = currentAnswers[i];
                       const playerDoc = playerDocs[i];
@@ -131,12 +129,17 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
 
     if (timeLeft <= 0) {
       const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+       // Only the host should be responsible for changing the phase
       getDoc(lobbyDocRef).then(lobbySnap => {
-          if (lobbySnap.exists() && lobbySnap.data().gameState.phase === 'question') {
-             updateDoc(lobbyDocRef, {
-                'gameState.phase': 'reveal',
-            });
-          }
+        if (lobbySnap.exists() && lobbySnap.data().gameState.phase === 'question') {
+          // Check if current user is host before updating.
+          // In this simplified component structure, we don't know who is host.
+          // The robust way is to let the host control this, but for now we let anyone trigger it.
+          // This can be improved by passing an isHost prop.
+          updateDoc(lobbyDocRef, {
+            'gameState.phase': 'reveal',
+          });
+        }
       });
       return;
     }
@@ -200,7 +203,7 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
           ))}
         </div>
         <div className="text-center text-foreground/60 h-6">
-          {isAnswerPhase && !!selectedAnswer && <p>Réponse enregistrée. En attente de la fin du temps...</p>}
+          {isAnswerPhase && !!selectedAnswer && <p>Réponse enregistrée. Vous pouvez la modifier jusqu'à la fin du temps.</p>}
           {!isAnswerPhase && <p>Les réponses sont verrouillées. Révélation des scores...</p>}
         </div>
       </CardContent>

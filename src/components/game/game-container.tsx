@@ -53,7 +53,6 @@ function HostControls({ lobbyId }: { lobbyId: string }) {
   };
 
   const handleNullifyQuestion = async () => {
-    // Cette action passera à la question suivante sans attribuer de points.
     await handleNextQuestion();
   };
 
@@ -147,7 +146,6 @@ export function GameContainer() {
                 const data = docSnap.data() as LobbyData;
                 setLobbyData(data);
 
-                // Ensure host's player name is set for HUD
                 if (isHost && !playerName && data.hostName) {
                     setPlayerName(data.hostName);
                 }
@@ -180,9 +178,6 @@ export function GameContainer() {
             unsubscribePlayer = onSnapshot(playerDocRef, (docSnap) => {
                 if(docSnap.exists()){
                     setPlayerState(docSnap.data() as PlayerState);
-                } else {
-                    // This can happen briefly when a player joins, it's not an error.
-                    // console.log(`Player doc for ${playerName} not found yet.`);
                 }
             });
         }
