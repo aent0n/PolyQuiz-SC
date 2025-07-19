@@ -65,30 +65,31 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
 
       const calculateScores = async () => {
           try {
-              const answersQuery = query(collection(db, 'lobbies', lobbyId, 'answers'), where('questionIndex', '==', currentQuestionIndex));
-              
               await runTransaction(db, async (transaction) => {
                   const marker = await transaction.get(scoreCalculatedMarkerRef);
                   if (marker.exists()) {
                       console.log(`Scores for question ${currentQuestionIndex} already calculated.`);
                       return; // Scores already calculated
                   }
-
-                  const answersSnapshot = await getDocs(answersQuery);
-                  const currentAnswers = answersSnapshot.docs.map(doc => doc.data() as { playerName: string; isCorrect: boolean });
                   
+                  // Phase 1: Reads
+                  const answersQuery = query(collection(db, 'lobbies', lobbyId, 'answers'), where('questionIndex', '==', currentQuestionIndex));
+                  const answersSnapshot = await getDocs(answersQuery);
+                  
+                  const currentAnswers = answersSnapshot.docs.map(doc => doc.data() as { playerName: string; isCorrect: boolean });
+
                   if (currentAnswers.length === 0) {
                       transaction.set(scoreCalculatedMarkerRef, { calculatedAt: new Date() });
                       return;
                   }
-                  
+
                   const playerRefs = currentAnswers.map(answer => doc(db, 'lobbies', lobbyId, 'players', answer.playerName));
-                  
                   const playerDocs = [];
                   for(const ref of playerRefs) {
-                    playerDocs.push(await transaction.get(ref));
+                      playerDocs.push(await transaction.get(ref));
                   }
-
+                  
+                  // Phase 2: Writes
                   for (let i = 0; i < currentAnswers.length; i++) {
                       const answer = currentAnswers[i];
                       const playerDoc = playerDocs[i];
@@ -132,7 +133,14 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
 
   // Timer countdown effect
   useEffect(() => {
-    if (!isAnswerPhase || timeLeft <= 0) {
+    if (timeLeft <= 0 && isAnswerPhase) {
+      // Time is up, move to reveal phase
+      const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+      updateDoc(lobbyDocRef, { 'gameState.phase': 'reveal' });
+      return;
+    }
+
+    if (!isAnswerPhase) {
       return;
     }
 
@@ -141,7 +149,7 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
     }, 1000);
 
     return () => clearInterval(timerId);
-  }, [timeLeft, isAnswerPhase, lobbyId, playerName]);
+  }, [timeLeft, isAnswerPhase, lobbyId]);
 
 
   if (!currentQuestion) {
