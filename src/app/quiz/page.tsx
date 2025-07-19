@@ -8,6 +8,9 @@ import { generateStarCitizenQuiz, type GenerateStarCitizenQuizOutput } from '@/a
 import { useToast } from "@/hooks/use-toast";
 import type { Quiz, GameState } from '@/types/quiz';
 import { QuizResults } from '@/components/quiz/quiz-results';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 
 export default function QuizPage() {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -107,7 +110,19 @@ export default function QuizPage() {
         />
       );
     }
-    return <QuizSetupForm onSubmit={handleStartQuiz} isLoading={isLoading} showHeader={true} />;
+    return (
+      <>
+        <QuizSetupForm onSubmit={handleStartQuiz} isLoading={isLoading} showHeader={true} />
+        <div className="text-center mt-6">
+          <Link href="/" passHref>
+            <Button variant="outline">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Retour à l'accueil
+            </Button>
+          </Link>
+        </div>
+      </>
+    );
   }
 
   return (
