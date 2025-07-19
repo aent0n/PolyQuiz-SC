@@ -155,7 +155,7 @@ function GameResults() {
                     <CardHeader>
                         <CardTitle className="flex items-center text-xl">
                             <BarChart3 className="mr-2 h-6 w-6"/>
-                            Panel Détaillé de l'Hôte
+                            Statistiques de jeu
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
