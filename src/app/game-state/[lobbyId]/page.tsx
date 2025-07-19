@@ -116,7 +116,7 @@ function GameStatePage() {
                 <GameContainer />
             </div>
             <footer className="z-10 mt-8 text-center text-sm text-foreground/50">
-                <p>PolyQuiz - Une aventure Star Citizen</p>
+                <p>PolyQuiz - Un projet par deltavip3r et Mrjop ✧</p>
                 <p>Non affilié à Cloud Imperium Games.</p>
             </footer>
         </main>
