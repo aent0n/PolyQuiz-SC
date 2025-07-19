@@ -81,7 +81,7 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
                       transaction.set(scoreCalculatedMarkerRef, { calculatedAt: new Date() });
                       return;
                   }
-
+                  
                   const playerRefs = currentAnswers.map(answer => doc(db, 'lobbies', lobbyId, 'players', answer.playerName));
                   
                   const playerDocs = [];
@@ -134,15 +134,12 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
     if (!isAnswerPhase) return;
 
     if (timeLeft <= 0) {
-      // Only the host should be responsible for ending the question phase
       const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+      // Ensure only host updates phase to prevent race conditions
       getDoc(lobbyDocRef).then(lobbySnap => {
         if (lobbySnap.exists() && lobbySnap.data().hostName === playerName) {
-           // Double-check phase to prevent race conditions
            if (lobbySnap.data().gameState.phase === 'question') {
-             updateDoc(lobbyDocRef, {
-                'gameState.phase': 'reveal',
-             });
+             updateDoc(lobbyDocRef, { 'gameState.phase': 'reveal' });
            }
         }
       });
