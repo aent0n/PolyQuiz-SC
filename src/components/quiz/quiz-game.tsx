@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import type { Quiz, QuizQuestion, GameState, PlayerState } from '@/types/quiz';
 import { db } from '@/lib/firebase';
-import { doc, setDoc, updateDoc, collection, onSnapshot, getDocs, getDoc, runTransaction } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, collection, onSnapshot, getDocs, getDoc, runTransaction, query, where } from 'firebase/firestore';
 
 interface QuizGameProps {
   lobbyId: string;
@@ -59,35 +59,35 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
 
   // Score calculation effect
   useEffect(() => {
-      // We only want to run score calculation once when moving to the 'reveal' phase.
-      // We add a check for a marker document to prevent re-calculation on client re-renders.
       if (phase !== 'reveal') return;
 
       const scoreCalculatedMarkerRef = doc(db, 'lobbies', lobbyId, 'answers', `score-calculated-${currentQuestionIndex}`);
 
       const calculateScores = async () => {
           try {
+              const answersQuery = query(collection(db, 'lobbies', lobbyId, 'answers'), where('questionIndex', '==', currentQuestionIndex));
+              const answersSnapshot = await getDocs(answersQuery);
+              const currentAnswers = answersSnapshot.docs.map(doc => doc.data() as { playerName: string; isCorrect: boolean });
+
               await runTransaction(db, async (transaction) => {
                   const marker = await transaction.get(scoreCalculatedMarkerRef);
                   if (marker.exists()) {
-                      // Scores for this question have already been calculated.
-                      return;
+                      return; // Scores already calculated
                   }
-
-                  const answersQuerySnapshot = await getDocs(collection(db, 'lobbies', lobbyId, 'answers'));
-                  const currentAnswers = answersQuerySnapshot.docs
-                      .map(doc => ({ id: doc.id, ...doc.data() }))
-                      .filter(a => a.questionIndex === currentQuestionIndex);
-
+                  
                   if (currentAnswers.length === 0) {
-                       // Mark as calculated even if no answers, to prevent re-runs
                       transaction.set(scoreCalculatedMarkerRef, { calculatedAt: new Date() });
                       return;
                   }
 
-                  for (const answer of currentAnswers) {
-                      const playerDocRef = doc(db, 'lobbies', lobbyId, 'players', answer.playerName);
-                      const playerDoc = await transaction.get(playerDocRef);
+                  // 1. READ PHASE: Get all player documents first.
+                  const playerRefs = currentAnswers.map(answer => doc(db, 'lobbies', lobbyId, 'players', answer.playerName));
+                  const playerDocs = await Promise.all(playerRefs.map(ref => transaction.get(ref)));
+
+                  // 2. WRITE PHASE: Now perform all updates.
+                  for (let i = 0; i < currentAnswers.length; i++) {
+                      const answer = currentAnswers[i];
+                      const playerDoc = playerDocs[i];
 
                       if (!playerDoc.exists()) continue;
 
@@ -105,10 +105,9 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
                       } else {
                           newStreak = 0;
                       }
-                      transaction.update(playerDocRef, { score: newScore, streak: newStreak });
+                      transaction.update(playerRefs[i], { score: newScore, streak: newStreak });
                   }
-
-                  // Set the marker to indicate scores have been calculated for this question
+                  
                   transaction.set(scoreCalculatedMarkerRef, { calculatedAt: new Date() });
               });
           } catch (error) {
@@ -132,8 +131,6 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
 
     if (timeLeft <= 0) {
       const lobbyDocRef = doc(db, 'lobbies', lobbyId);
-      // Ensure only one client (or the host ideally) triggers the update
-      // This could be improved by making it a host-only action
       getDoc(lobbyDocRef).then(lobbySnap => {
           if (lobbySnap.exists() && lobbySnap.data().gameState.phase === 'question') {
              updateDoc(lobbyDocRef, {
@@ -153,9 +150,6 @@ export function QuizGame({ quiz, topic, onFinish, timer = QUESTION_TIME, lobbyId
 
 
   if (!currentQuestion) {
-    // This now just signals that this client is done.
-    // The redirect will be handled by the game container.
-    // This avoids rendering QuizResults which is now obsolete.
      useEffect(() => {
        onFinish();
      }, [onFinish]);
