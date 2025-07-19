@@ -23,9 +23,10 @@ export type GenerateStarCitizenQuizInput = z.infer<
 >;
 
 const questionSchema = z.object({
-  question: z.string().describe('The question text'),
-  options: z.array(z.string()).describe('An array of 4 possible answers.'),
+  question: z.string().describe('The question text, in French.'),
+  options: z.array(z.string()).describe('An array of 4 possible answers, in French.'),
   answer: z.string().describe('The correct answer, which must be one of the options.'),
+  explanation: z.string().describe('A brief explanation or fun fact about the correct answer, in French.'),
 });
 
 const GenerateStarCitizenQuizOutputSchema = z.object({
@@ -47,7 +48,8 @@ const generateStarCitizenQuizPrompt = ai.definePrompt({
   output: {schema: GenerateStarCitizenQuizOutputSchema},
   prompt: `You are an expert quiz generator specializing in Star Citizen trivia.
 
-  Generate a quiz with {{numQuestions}} questions about {{topic}}.
+  Generate a quiz in French with {{numQuestions}} questions about {{topic}}.
+  For each question, provide a brief explanation or fun fact for the correct answer.
   Ensure that the answer is one of the 4 options provided.
   `,
 });

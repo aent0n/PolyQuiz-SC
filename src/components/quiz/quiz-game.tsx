@@ -9,6 +9,14 @@ import { cn } from '@/lib/utils';
 import type { Quiz, QuizQuestion, GameState, PlayerState } from '@/types/quiz';
 import { db } from '@/lib/firebase';
 import { doc, setDoc, updateDoc, collection, onSnapshot, getDocs, getDoc, runTransaction, query, where } from 'firebase/firestore';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+import { HelpCircle } from 'lucide-react';
+
 
 interface QuizGameProps {
   lobbyId: string;
@@ -188,6 +196,22 @@ export function QuizGame({ quiz, topic, onFinish, timer, lobbyId, playerName, ga
           {isAnswerPhase && !!selectedAnswer && <p>Réponse enregistrée. Vous pouvez la modifier jusqu'à la fin du temps.</p>}
           {!isAnswerPhase && <p>Les réponses sont verrouillées. Révélation des scores...</p>}
         </div>
+
+        {!isAnswerPhase && currentQuestion.explanation && (
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="item-1">
+              <AccordionTrigger>
+                <div className="flex items-center gap-2">
+                  <HelpCircle className="h-4 w-4" />
+                  <span>Explication</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                {currentQuestion.explanation}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        )}
       </CardContent>
     </Card>
   );
