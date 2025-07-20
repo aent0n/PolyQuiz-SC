@@ -167,7 +167,16 @@ export default function ModeratorLobbyPage() {
                     <PopoverContent className="w-auto p-4">
                         <div className="flex flex-col items-center gap-2">
                             <h4 className="font-medium text-lg">Scannez pour rejoindre</h4>
-                            {joinUrl && <QRCodeSVG value={joinUrl} size={192} />}
+                            {joinUrl && (
+                                <QRCodeSVG 
+                                    value={joinUrl} 
+                                    size={192}
+                                    bgColor={"#1A237E"}
+                                    fgColor={"#FF4500"}
+                                    level={"L"}
+                                    includeMargin={true}
+                                />
+                            )}
                              <p className="text-sm text-muted-foreground">{lobbyId}</p>
                         </div>
                     </PopoverContent>
