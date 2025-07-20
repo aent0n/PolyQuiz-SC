@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { LogIn, PlusCircle, Shield, PenSquare, Rocket, GitCommitHorizontal, BookOpenCheck, List } from 'lucide-react';
+import { LogIn, PlusCircle, Shield, PenSquare, Rocket, GitCommitHorizontal, BookOpenCheck, List, Bug } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -60,17 +60,24 @@ export function HomePage() {
         <Dialog>
           <DialogTrigger asChild>
             <Badge variant="outline" className="text-xs cursor-pointer hover:bg-accent">
-                v1.1
+                v1.2
             </Badge>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle className="text-primary text-2xl">Notes de version v1.1</DialogTitle>
+              <DialogTitle className="text-primary text-2xl">Notes de version v1.2</DialogTitle>
               <DialogDescription>
-                Plus de thèmes pour plus de fun !
+                Corrections de bugs et améliorations de la stabilité.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
+              <div className="flex items-start gap-4">
+                <Bug className="h-5 w-5 text-primary mt-1" />
+                <div>
+                  <h4 className="font-semibold">Stabilité Améliorée</h4>
+                  <p className="text-sm text-muted-foreground">Correction de plusieurs bugs critiques en mode "Jeu Solo" qui pouvaient causer des plantages et des boucles infinies. L'expérience est maintenant plus stable.</p>
+                </div>
+              </div>
               <div className="flex items-start gap-4">
                 <List className="h-5 w-5 text-primary mt-1" />
                 <div>
