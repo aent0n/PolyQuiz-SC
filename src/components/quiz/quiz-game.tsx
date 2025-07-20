@@ -72,7 +72,7 @@ export function QuizGame({
   }, [currentQuestionIndex]);
 
   const submitAnswer = useCallback(async (answer: string) => {
-    if (!isMultiplayer || !playerName || !isAnswerPhase || !currentQuestion) return;
+    if (!isMultiplayer || !playerName || !isAnswerPhase || !currentQuestion || !lobbyId) return;
 
     const answerRef = doc(db, 'lobbies', lobbyId, 'answers', `${currentQuestionIndex}-${playerName}`);
     try {
@@ -86,7 +86,7 @@ export function QuizGame({
     } catch (e) {
       console.error("Failed to submit answer:", e);
     }
-  }, [lobbyId, playerName, currentQuestionIndex, currentQuestion, isAnswerPhase, isMultiplayer]);
+  }, [isMultiplayer, playerName, isAnswerPhase, currentQuestion, lobbyId, currentQuestionIndex]);
 
   const handleAnswerSelect = (option: string) => {
     if (isAnswerPhase) {
@@ -101,26 +101,28 @@ export function QuizGame({
   useEffect(() => {
       if (phase !== 'reveal' || !currentQuestion) return;
 
-      if (!isMultiplayer && onScoreUpdate && onStreakUpdate && onCorrectAnswer) {
+      if (!isMultiplayer) {
         // --- SOLO MODE SCORE CALCULATION ---
-        if (selectedAnswer === currentQuestion.answer) {
-          onCorrectAnswer();
-          onStreakUpdate(prevStreak => {
-            const newStreak = prevStreak + 1;
-            let pointsGained = BASE_POINTS;
-            if (newStreak >= STREAK_BONUS_THRESHOLD) {
-              pointsGained += STREAK_BONUS_POINTS;
+         if (onScoreUpdate && onStreakUpdate && onCorrectAnswer) {
+            if (selectedAnswer === currentQuestion.answer) {
+              onCorrectAnswer();
+              onStreakUpdate(prevStreak => {
+                const newStreak = prevStreak + 1;
+                let pointsGained = BASE_POINTS;
+                if (newStreak >= STREAK_BONUS_THRESHOLD) {
+                  pointsGained += STREAK_BONUS_POINTS;
+                }
+                onScoreUpdate(prevScore => prevScore + pointsGained);
+                return newStreak;
+              });
+            } else {
+              onStreakUpdate(0);
             }
-            onScoreUpdate(prevScore => prevScore + pointsGained);
-            return newStreak;
-          });
-        } else {
-          onStreakUpdate(0);
-        }
+         }
         return; // End of solo mode logic
       }
       
-      if(isMultiplayer) {
+      if(isMultiplayer && lobbyId) {
         // --- MULTIPLAYER MODE SCORE CALCULATION ---
         const scoreCalculatedMarkerRef = doc(db, 'lobbies', lobbyId, 'answers', `score-calculated-${currentQuestionIndex}`);
 
@@ -129,7 +131,6 @@ export function QuizGame({
                 await runTransaction(db, async (transaction) => {
                     const marker = await transaction.get(scoreCalculatedMarkerRef);
                     if (marker.exists()) {
-                        console.log(`Scores for question ${currentQuestionIndex} already calculated.`);
                         return; // Scores already calculated
                     }
                     
