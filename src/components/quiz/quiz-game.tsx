@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import type { Quiz, QuizQuestion, GameState, PlayerState } from '@/types/quiz';
+import type { Quiz, QuizQuestion, GameState } from '@/types/quiz';
 import { db } from '@/lib/firebase';
-import { doc, setDoc, updateDoc, collection, onSnapshot, getDocs, getDoc, runTransaction, query, where } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import {
   Accordion,
   AccordionContent,
@@ -76,6 +76,7 @@ export function QuizGame({
   const submitAnswer = useCallback(async (answer: string) => {
     if (!isMultiplayer || !playerName || !isAnswerPhase || !currentQuestion || !lobbyId) return;
 
+    // We only record the last answer given by the player for the current question
     const answerRef = doc(db, 'lobbies', lobbyId, 'answers', `${currentQuestionIndex}-${playerName}`);
     try {
       await setDoc(answerRef, {
@@ -99,97 +100,41 @@ export function QuizGame({
     }
   }
 
-  // Score calculation effect - runs in both modes but targets different state updates
+  // Score calculation effect - runs ONLY in SOLO mode
   useEffect(() => {
-    if (phase !== 'reveal' || !currentQuestion) return;
+    if (isMultiplayer || phase !== 'reveal' || !currentQuestion) return;
     
     // Check if score has already been calculated for this question to prevent loops
     if(scoreCalculatedForIndex.current === currentQuestionIndex) return;
 
-    if (!isMultiplayer) {
-      // --- SOLO MODE SCORE CALCULATION ---
-      if (onScoreUpdate && onStreakUpdate && onCorrectAnswer) {
-        if (selectedAnswer === currentQuestion.answer) {
-          onCorrectAnswer();
-          onStreakUpdate(prevStreak => {
-            const newStreak = prevStreak + 1;
-            let pointsGained = BASE_POINTS;
-            if (newStreak >= STREAK_BONUS_THRESHOLD) {
-              pointsGained += STREAK_BONUS_POINTS;
-            }
-            onScoreUpdate(prevScore => prevScore + pointsGained);
-            return newStreak;
-          });
-        } else {
-          onStreakUpdate(0);
-        }
-        scoreCalculatedForIndex.current = currentQuestionIndex;
+    // --- SOLO MODE SCORE CALCULATION ---
+    if (onScoreUpdate && onStreakUpdate && onCorrectAnswer) {
+      if (selectedAnswer === currentQuestion.answer) {
+        onCorrectAnswer();
+        onStreakUpdate(prevStreak => {
+          const newStreak = prevStreak + 1;
+          let pointsGained = BASE_POINTS;
+          if (newStreak >= STREAK_BONUS_THRESHOLD) {
+            pointsGained += STREAK_BONUS_POINTS;
+          }
+          onScoreUpdate(prevScore => prevScore + pointsGained);
+          return newStreak;
+        });
+      } else {
+        onStreakUpdate(0);
       }
-      return; // End of solo mode logic
+      scoreCalculatedForIndex.current = currentQuestionIndex;
     }
-    
-    if(isMultiplayer && lobbyId && phase === 'reveal') {
-      // --- MULTIPLAYER MODE SCORE CALCULATION ---
-      const scoreCalculatedMarkerRef = doc(db, 'lobbies', lobbyId, 'answers', `score-calculated-${currentQuestionIndex}`);
-
-      const calculateScores = async () => {
-        try {
-            await runTransaction(db, async (transaction) => {
-                const marker = await transaction.get(scoreCalculatedMarkerRef);
-                if (marker.exists()) {
-                    return; // Scores already calculated for this question index
-                }
-                
-                const answersQuery = query(collection(db, 'lobbies', lobbyId, 'answers'), where('questionIndex', '==', currentQuestionIndex));
-                const answersSnapshot = await getDocs(answersQuery);
-                
-                const currentAnswers = answersSnapshot.docs.map(doc => doc.data() as { playerName: string; isCorrect: boolean });
-
-                if (currentAnswers.length === 0) {
-                    transaction.set(scoreCalculatedMarkerRef, { calculatedAt: new Date() });
-                    return;
-                }
-
-                const playerRefs = currentAnswers.map(answer => doc(db, 'lobbies', lobbyId, 'players', answer.playerName));
-                const playerDocs = [];
-                for(const ref of playerRefs) {
-                    playerDocs.push(await transaction.get(ref));
-                }
-                
-                for (let i = 0; i < currentAnswers.length; i++) {
-                    const answer = currentAnswers[i];
-                    const playerDoc = playerDocs[i];
-
-                    if (!playerDoc.exists()) continue;
-
-                    const playerData = playerDoc.data() as PlayerState;
-                    let newScore = playerData.score;
-                    let newStreak = playerData.streak;
-
-                    if (answer.isCorrect) {
-                        newStreak += 1;
-                        let pointsGained = BASE_POINTS;
-                        if (newStreak >= STREAK_BONUS_THRESHOLD) {
-                            pointsGained += STREAK_BONUS_POINTS;
-                        }
-                        newScore += pointsGained;
-                    } else {
-                        newStreak = 0;
-                    }
-                    transaction.update(playerRefs[i], { score: newScore, streak: newStreak });
-                }
-                
-                transaction.set(scoreCalculatedMarkerRef, { calculatedAt: new Date() });
-            });
-        } catch (error) {
-            console.error("Transaction failed: ", error);
-        }
-      };
-
-      calculateScores();
-    }
-
-  }, [phase, currentQuestionIndex, lobbyId, isMultiplayer, onScoreUpdate, onStreakUpdate, onCorrectAnswer, selectedAnswer, currentQuestion]);
+  }, [
+      phase, 
+      isMultiplayer, 
+      currentQuestionIndex, 
+      onScoreUpdate, 
+      onStreakUpdate, 
+      onCorrectAnswer, 
+      selectedAnswer, 
+      currentQuestion
+  ]);
 
 
   useEffect(() => {
@@ -247,7 +192,7 @@ export function QuizGame({
         </div>
         <div className="text-center text-foreground/60 h-6">
           {isAnswerPhase && !!selectedAnswer && <p>Réponse enregistrée. Vous pouvez la modifier jusqu'à la fin du temps.</p>}
-          {phase === 'reveal' && <p>Les réponses sont verrouillées. Révélation des scores...</p>}
+          {phase === 'reveal' && <p>Les réponses sont verrouillées. En attente de l'hôte...</p>}
           {phase === 'nulled' && <p className="text-destructive font-bold">Question annulée par l'hôte. Aucun point ne sera attribué.</p>}
         </div>
 
@@ -283,3 +228,5 @@ export function QuizGame({
     </Card>
   );
 }
+
+    

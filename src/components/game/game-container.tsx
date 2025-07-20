@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { doc, onSnapshot, updateDoc, getDoc, runTransaction } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, runTransaction, collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2, XCircle, Flame, Star, ChevronsRight } from 'lucide-react';
 import type { LobbyData, PlayerState } from '@/types/quiz';
@@ -22,6 +22,65 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
+const STREAK_BONUS_THRESHOLD = 3;
+const BASE_POINTS = 10;
+const STREAK_BONUS_POINTS = 5;
+
+// This function will now be responsible for calculating and updating scores.
+// It will be called explicitly by the host controls.
+async function calculateAndApplyScores(lobbyId: string, questionIndex: number) {
+  const scoreCalculatedMarkerRef = doc(db, 'lobbies', lobbyId, 'answers', `score-calculated-${questionIndex}`);
+  const answersQuery = query(collection(db, 'lobbies', lobbyId, 'answers'), where('questionIndex', '==', questionIndex));
+  
+  try {
+    await runTransaction(db, async (transaction) => {
+      const marker = await transaction.get(scoreCalculatedMarkerRef);
+      if (marker.exists()) {
+        console.log(`Scores for question ${questionIndex} already calculated.`);
+        return; // Scores already calculated
+      }
+
+      const answersSnapshot = await getDocs(answersQuery);
+      const playerAnswers: { [playerName: string]: boolean } = {};
+      answersSnapshot.forEach(doc => {
+          const data = doc.data();
+          playerAnswers[data.playerName] = data.isCorrect;
+      });
+
+      const playersColRef = collection(db, 'lobbies', lobbyId, 'players');
+      const playersSnapshot = await getDocs(playersColRef);
+
+      playersSnapshot.forEach(playerDoc => {
+          const playerData = playerDoc.data() as PlayerState;
+          const isCorrect = playerAnswers[playerData.name];
+          
+          if (isCorrect === undefined) return; // Player didn't answer
+
+          let newScore = playerData.score;
+          let newStreak = playerData.streak;
+
+          if (isCorrect) {
+              newStreak += 1;
+              let pointsGained = BASE_POINTS;
+              if (newStreak >= STREAK_BONUS_THRESHOLD) {
+                  pointsGained += STREAK_BONUS_POINTS;
+              }
+              newScore += pointsGained;
+          } else {
+              newStreak = 0;
+          }
+          transaction.update(playerDoc.ref, { score: newScore, streak: newStreak });
+      });
+
+      // Mark this question's scores as calculated
+      transaction.set(scoreCalculatedMarkerRef, { calculatedAt: new Date() });
+    });
+  } catch (error) {
+    console.error("Score calculation transaction failed: ", error);
+  }
+}
+
+
 function HostControls({ lobbyId }: { lobbyId: string }) {
   const handleNextQuestion = async () => {
     const lobbyDocRef = doc(db, 'lobbies', lobbyId);
@@ -33,7 +92,15 @@ function HostControls({ lobbyId }: { lobbyId: string }) {
         }
 
         const lobbyData = lobbySnap.data() as LobbyData;
-        const nextIndex = lobbyData.gameState.currentQuestionIndex + 1;
+        const { currentQuestionIndex, phase } = lobbyData.gameState;
+        
+        // If revealing a valid question, calculate scores before moving on.
+        if (phase === 'reveal') {
+            await calculateAndApplyScores(lobbyId, currentQuestionIndex);
+        }
+        
+        // Now, move to the next question or finish the game.
+        const nextIndex = currentQuestionIndex + 1;
 
         if (nextIndex >= lobbyData.quiz.length) {
            transaction.update(lobbyDocRef, {
@@ -217,7 +284,7 @@ export function GameContainer() {
         }
         return () => clearInterval(timerRef.current);
 
-    }, [lobbyData?.gameState, lobbyData?.timer, isHost, lobbyId]);
+    }, [lobbyData?.gameState?.phase, lobbyData?.gameState?.currentQuestionIndex, lobbyData?.timer, isHost, lobbyId]);
 
 
     const handleFinish = async () => {
@@ -266,3 +333,5 @@ export function GameContainer() {
         </div>
     );
 }
+
+    
