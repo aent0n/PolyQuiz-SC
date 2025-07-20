@@ -42,13 +42,13 @@ export function HomePage() {
            <Button className="w-full text-lg py-6" variant="outline" disabled>
             <PenSquare className="mr-2" /> Créer un Quiz
           </Button>
-          <Badge variant="secondary" className="absolute -top-2 -right-2 -rotate-12">Prochainement</Badge>
+          <Badge variant="secondary" className="absolute -top-1 -right-1 -rotate-12">Prochainement !</Badge>
         </div>
         <div className="w-full max-w-sm relative">
            <Button className="w-full text-lg py-6" variant="ghost" disabled>
             <Shield className="mr-2" /> Vue Modérateur
           </Button>
-           <Badge variant="secondary" className="absolute -top-2 -right-2 -rotate-12">Prochainement</Badge>
+           <Badge variant="secondary" className="absolute -top-1 -right-1 -rotate-12">Prochainement !</Badge>
         </div>
          <Link href="/quiz" passHref className="w-full max-w-sm">
            <Button className="w-full text-lg py-6" variant="ghost">
