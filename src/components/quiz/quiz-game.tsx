@@ -62,6 +62,8 @@ export function QuizGame({
   const isMultiplayer = !!lobbyId;
 
   const previousQuestionIndex = useRef<number>();
+  const scoreCalculatedForIndex = useRef<number>();
+
 
   useEffect(() => {
     // This effect ensures local state is reset ONLY when the question actually changes.
@@ -99,89 +101,93 @@ export function QuizGame({
 
   // Score calculation effect - runs in both modes but targets different state updates
   useEffect(() => {
-      if (phase !== 'reveal' || !currentQuestion) return;
+    if (phase !== 'reveal' || !currentQuestion) return;
+    
+    // Check if score has already been calculated for this question to prevent loops
+    if(scoreCalculatedForIndex.current === currentQuestionIndex) return;
 
-      if (!isMultiplayer) {
-        // --- SOLO MODE SCORE CALCULATION ---
-         if (onScoreUpdate && onStreakUpdate && onCorrectAnswer) {
-            if (selectedAnswer === currentQuestion.answer) {
-              onCorrectAnswer();
-              onStreakUpdate(prevStreak => {
-                const newStreak = prevStreak + 1;
-                let pointsGained = BASE_POINTS;
-                if (newStreak >= STREAK_BONUS_THRESHOLD) {
-                  pointsGained += STREAK_BONUS_POINTS;
+    if (!isMultiplayer) {
+      // --- SOLO MODE SCORE CALCULATION ---
+      if (onScoreUpdate && onStreakUpdate && onCorrectAnswer) {
+        if (selectedAnswer === currentQuestion.answer) {
+          onCorrectAnswer();
+          onStreakUpdate(prevStreak => {
+            const newStreak = prevStreak + 1;
+            let pointsGained = BASE_POINTS;
+            if (newStreak >= STREAK_BONUS_THRESHOLD) {
+              pointsGained += STREAK_BONUS_POINTS;
+            }
+            onScoreUpdate(prevScore => prevScore + pointsGained);
+            return newStreak;
+          });
+        } else {
+          onStreakUpdate(0);
+        }
+        scoreCalculatedForIndex.current = currentQuestionIndex;
+      }
+      return; // End of solo mode logic
+    }
+    
+    if(isMultiplayer && lobbyId) {
+      // --- MULTIPLAYER MODE SCORE CALCULATION ---
+      const scoreCalculatedMarkerRef = doc(db, 'lobbies', lobbyId, 'answers', `score-calculated-${currentQuestionIndex}`);
+
+      const calculateScores = async () => {
+        try {
+            await runTransaction(db, async (transaction) => {
+                const marker = await transaction.get(scoreCalculatedMarkerRef);
+                if (marker.exists()) {
+                    return; // Scores already calculated for this question index
                 }
-                onScoreUpdate(prevScore => prevScore + pointsGained);
-                return newStreak;
-              });
-            } else {
-              onStreakUpdate(0);
-            }
-         }
-        return; // End of solo mode logic
-      }
-      
-      if(isMultiplayer && lobbyId) {
-        // --- MULTIPLAYER MODE SCORE CALCULATION ---
-        const scoreCalculatedMarkerRef = doc(db, 'lobbies', lobbyId, 'answers', `score-calculated-${currentQuestionIndex}`);
+                
+                const answersQuery = query(collection(db, 'lobbies', lobbyId, 'answers'), where('questionIndex', '==', currentQuestionIndex));
+                const answersSnapshot = await getDocs(answersQuery);
+                
+                const currentAnswers = answersSnapshot.docs.map(doc => doc.data() as { playerName: string; isCorrect: boolean });
 
-        const calculateScores = async () => {
-            try {
-                await runTransaction(db, async (transaction) => {
-                    const marker = await transaction.get(scoreCalculatedMarkerRef);
-                    if (marker.exists()) {
-                        return; // Scores already calculated
-                    }
-                    
-                    const answersQuery = query(collection(db, 'lobbies', lobbyId, 'answers'), where('questionIndex', '==', currentQuestionIndex));
-                    const answersSnapshot = await getDocs(answersQuery);
-                    
-                    const currentAnswers = answersSnapshot.docs.map(doc => doc.data() as { playerName: string; isCorrect: boolean });
-
-                    if (currentAnswers.length === 0) {
-                        transaction.set(scoreCalculatedMarkerRef, { calculatedAt: new Date() });
-                        return;
-                    }
-
-                    const playerRefs = currentAnswers.map(answer => doc(db, 'lobbies', lobbyId, 'players', answer.playerName));
-                    const playerDocs = [];
-                    for(const ref of playerRefs) {
-                        playerDocs.push(await transaction.get(ref));
-                    }
-                    
-                    for (let i = 0; i < currentAnswers.length; i++) {
-                        const answer = currentAnswers[i];
-                        const playerDoc = playerDocs[i];
-
-                        if (!playerDoc.exists()) continue;
-
-                        const playerData = playerDoc.data() as PlayerState;
-                        let newScore = playerData.score;
-                        let newStreak = playerData.streak;
-
-                        if (answer.isCorrect) {
-                            newStreak += 1;
-                            let pointsGained = BASE_POINTS;
-                            if (newStreak >= STREAK_BONUS_THRESHOLD) {
-                                pointsGained += STREAK_BONUS_POINTS;
-                            }
-                            newScore += pointsGained;
-                        } else {
-                            newStreak = 0;
-                        }
-                        transaction.update(playerRefs[i], { score: newScore, streak: newStreak });
-                    }
-                    
+                if (currentAnswers.length === 0) {
                     transaction.set(scoreCalculatedMarkerRef, { calculatedAt: new Date() });
-                });
-            } catch (error) {
-                console.error("Transaction failed: ", error);
-            }
-        };
+                    return;
+                }
 
-        calculateScores();
-      }
+                const playerRefs = currentAnswers.map(answer => doc(db, 'lobbies', lobbyId, 'players', answer.playerName));
+                const playerDocs = [];
+                for(const ref of playerRefs) {
+                    playerDocs.push(await transaction.get(ref));
+                }
+                
+                for (let i = 0; i < currentAnswers.length; i++) {
+                    const answer = currentAnswers[i];
+                    const playerDoc = playerDocs[i];
+
+                    if (!playerDoc.exists()) continue;
+
+                    const playerData = playerDoc.data() as PlayerState;
+                    let newScore = playerData.score;
+                    let newStreak = playerData.streak;
+
+                    if (answer.isCorrect) {
+                        newStreak += 1;
+                        let pointsGained = BASE_POINTS;
+                        if (newStreak >= STREAK_BONUS_THRESHOLD) {
+                            pointsGained += STREAK_BONUS_POINTS;
+                        }
+                        newScore += pointsGained;
+                    } else {
+                        newStreak = 0;
+                    }
+                    transaction.update(playerRefs[i], { score: newScore, streak: newStreak });
+                }
+                
+                transaction.set(scoreCalculatedMarkerRef, { calculatedAt: new Date() });
+            });
+        } catch (error) {
+            console.error("Transaction failed: ", error);
+        }
+      };
+
+      calculateScores();
+    }
 
   }, [phase, currentQuestionIndex, lobbyId, isMultiplayer, onScoreUpdate, onStreakUpdate, onCorrectAnswer, selectedAnswer, currentQuestion]);
 
