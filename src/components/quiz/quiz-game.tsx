@@ -128,7 +128,7 @@ export function QuizGame({
       return; // End of solo mode logic
     }
     
-    if(isMultiplayer && lobbyId) {
+    if(isMultiplayer && lobbyId && phase === 'reveal') {
       // --- MULTIPLAYER MODE SCORE CALCULATION ---
       const scoreCalculatedMarkerRef = doc(db, 'lobbies', lobbyId, 'answers', `score-calculated-${currentQuestionIndex}`);
 
@@ -204,12 +204,12 @@ export function QuizGame({
   }
 
   const getButtonClass = (option: string) => {
-    if (isAnswerPhase) {
+    if (phase === 'question') {
       return selectedAnswer === option
         ? 'border-primary bg-primary/20'
         : 'bg-secondary/80';
     }
-    // Reveal phase
+    // Reveal or Nulled phase
     if (option === currentQuestion.answer) {
       return 'bg-green-600 hover:bg-green-600 text-white border-green-500'; // Correct answer
     }
@@ -247,10 +247,11 @@ export function QuizGame({
         </div>
         <div className="text-center text-foreground/60 h-6">
           {isAnswerPhase && !!selectedAnswer && <p>Réponse enregistrée. Vous pouvez la modifier jusqu'à la fin du temps.</p>}
-          {!isAnswerPhase && <p>Les réponses sont verrouillées. Révélation des scores...</p>}
+          {phase === 'reveal' && <p>Les réponses sont verrouillées. Révélation des scores...</p>}
+          {phase === 'nulled' && <p className="text-destructive font-bold">Question annulée par l'hôte. Aucun point ne sera attribué.</p>}
         </div>
 
-        {!isAnswerPhase && (
+        {(phase === 'reveal' || phase === 'nulled') && (
           <div className="pt-2">
             {currentQuestion.explanation && (
               <Accordion type="single" collapsible className="w-full">

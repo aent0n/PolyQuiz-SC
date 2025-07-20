@@ -53,7 +53,10 @@ function HostControls({ lobbyId }: { lobbyId: string }) {
   };
 
   const handleNullifyQuestion = async () => {
-    await handleNextQuestion();
+    const lobbyDocRef = doc(db, 'lobbies', lobbyId);
+    await updateDoc(lobbyDocRef, {
+      'gameState.phase': 'nulled',
+    });
   };
 
   return (
@@ -160,7 +163,7 @@ export function GameContainer() {
                     router.push(`${url}?${params.toString()}`);
                 }
             } else {
-                setError('La partie a été terminée ou n\'existe plus.');
+                setError("La partie a été terminée ou n'existe plus.");
                 setTimeout(() => router.push('/'), 3000);
             }
             setLoading(false);
@@ -257,7 +260,7 @@ export function GameContainer() {
                 gameState={gameState}
                 timeLeft={timeLeft} // Pass the time down
             />
-            {isHost && gameState.phase === 'reveal' && (
+            {isHost && (gameState.phase === 'reveal' || gameState.phase === 'nulled') && (
                 <HostControls lobbyId={lobbyId} />
             )}
         </div>

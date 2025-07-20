@@ -10,7 +10,7 @@ export type Quiz = QuizQuestion[];
 
 export interface GameState {
   currentQuestionIndex: number;
-  phase: 'question' | 'reveal' | 'finished';
+  phase: 'question' | 'reveal' | 'finished' | 'nulled';
 }
 
 export interface PlayerState {
