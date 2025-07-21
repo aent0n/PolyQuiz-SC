@@ -18,7 +18,7 @@ export default function MaintenancePage() {
                     En Maintenance
                 </CardTitle>
                 <CardDescription className="text-foreground/80 pt-2">
-                    Nous effectuons actuellement des mises à jour pour améliorer votre expérience.
+                    Des mises à jour sont actuellement en cours pour améliorer votre expérience!
                 </CardDescription>
             </CardHeader>
             <CardContent>
