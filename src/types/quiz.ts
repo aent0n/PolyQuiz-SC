@@ -25,6 +25,7 @@ export interface PlayerState {
 export interface LobbyData {
   topic: string;
   timer: number;
+  difficulty: 'easy' | 'medium' | 'hard';
   quiz: Quiz;
   status: 'waiting' | 'playing' | 'finished';
   gameState: GameState;

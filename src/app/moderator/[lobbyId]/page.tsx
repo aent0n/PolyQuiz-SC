@@ -19,6 +19,7 @@ interface LobbyData {
   quiz: any[];
   status?: 'waiting' | 'playing' | 'finished';
   hostName: string;
+  difficulty: 'easy' | 'medium' | 'hard';
 }
 
 interface Player {
@@ -171,8 +172,8 @@ export default function ModeratorLobbyPage() {
                                 <QRCodeSVG 
                                     value={joinUrl} 
                                     size={192}
-                                    bgColor={"#1A237E"}
-                                    fgColor={"#FF4500"}
+                                    bgColor={"#ffffff"}
+                                    fgColor={"#000000"}
                                     level={"L"}
                                     includeMargin={true}
                                 />
@@ -201,6 +202,7 @@ export default function ModeratorLobbyPage() {
                     <p>Thème : <span className="font-semibold capitalize">{lobbyData.topic === 'mix' ? 'Mix' : lobbyData.topic}</span></p>
                     <p>Questions : <span className="font-semibold">{lobbyData.quiz.length}</span></p>
                     <p>Timer : <span className="font-semibold">{lobbyData.timer} secondes</span></p>
+                    <p>Difficulté : <span className="font-semibold capitalize">{lobbyData.difficulty}</span></p>
                   </CardContent>
                 </Card>
 

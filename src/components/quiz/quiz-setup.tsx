@@ -30,6 +30,7 @@ const formSchema = z.object({
   numQuestions: z.coerce.number().min(1).max(50),
   timer: z.coerce.number().min(5).max(300),
   playerName: z.string().optional(),
+  difficulty: z.enum(['easy', 'medium', 'hard']),
 });
 
 export type QuizSetupFormValues = z.infer<typeof formSchema>;
@@ -44,6 +45,12 @@ const topics = [
     { value: 'histoire de l\'UEE', label: 'Histoire de l\'UEE' },
     { value: 'races aliens', label: 'Races Aliens' },
     { value: 'systèmes stellaires', label: 'Systèmes Stellaires' },
+];
+
+const difficultyLevels = [
+    { value: 'easy', label: 'Facile' },
+    { value: 'medium', label: 'Moyen' },
+    { value: 'hard', label: 'Difficile' },
 ];
 
 const timerOptions = [10, 15, 20, 30];
@@ -75,6 +82,7 @@ export function QuizSetupForm({
     timerSelect: z.string(),
     timerCustom: z.coerce.number().optional(),
     playerName: z.string().optional(),
+    difficulty: z.enum(['easy', 'medium', 'hard']),
   }).refine(data => {
     if (data.numQuestionsSelect === 'custom') {
       return data.numQuestionsCustom !== undefined && data.numQuestionsCustom >= 1 && data.numQuestionsCustom <= 50;
@@ -101,6 +109,7 @@ export function QuizSetupForm({
       topic: 'mix',
       numQuestionsSelect: defaultNumQuestions,
       timerSelect: '15',
+      difficulty: 'medium',
       numQuestionsCustom: undefined,
       timerCustom: undefined,
       playerName: '',
@@ -113,6 +122,7 @@ export function QuizSetupForm({
       numQuestions: values.numQuestionsSelect === 'custom' ? values.numQuestionsCustom! : Number(values.numQuestionsSelect),
       timer: values.timerSelect === 'custom' ? values.timerCustom! : Number(values.timerSelect),
       playerName: values.playerName,
+      difficulty: values.difficulty,
     };
     onSubmit(finalValues);
   };
@@ -162,6 +172,30 @@ export function QuizSetupForm({
                       {topics.map((topic) => (
                         <SelectItem key={topic.value} value={topic.value}>
                           {topic.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="difficulty"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Difficulté</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionnez une difficulté" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {difficultyLevels.map((level) => (
+                        <SelectItem key={level.value} value={level.value}>
+                          {level.label}
                         </SelectItem>
                       ))}
                     </SelectContent>

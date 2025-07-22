@@ -17,6 +17,7 @@ const GenerateStarCitizenQuizInputSchema = z.object({
     .string()
     .describe('The topic of the Star Citizen quiz. Can be a specific topic like "lore", "locations", "ships", or "mix" for a mix of all topics.'),
   numQuestions: z.number().describe('The number of questions to generate for the quiz.'),
+  difficulty: z.enum(['easy', 'medium', 'hard']).describe('The difficulty level of the quiz.'),
 });
 export type GenerateStarCitizenQuizInput = z.infer<
   typeof GenerateStarCitizenQuizInputSchema
@@ -49,6 +50,12 @@ const generateStarCitizenQuizPrompt = ai.definePrompt({
   prompt: `You are an expert quiz generator specializing in Star Citizen trivia.
 
   Generate a quiz with {{numQuestions}} questions about the following topic: "{{topic}}". If the topic is "mix", generate questions from a variety of categories (lore, ships, locations, history, etc.).
+  The quiz difficulty must be: {{difficulty}}.
+
+  Guidelines for difficulty:
+  - easy: Questions should cover general knowledge that most players would know. Focus on popular ships, major locations, and main story elements.
+  - medium: Questions can be more specific, about less common ships, specific planetary systems, or events mentioned in lore posts.
+  - hard: Questions should be for experts, referencing deep lore, specific ship stats, historical details from "Inside Star Citizen" or other developer content.
   
   The entire quiz should be primarily in French, but you MUST keep technical terms, ship names, or proper nouns in English if their French translation is awkward or not commonly used by the community (e.g., "Jump Point", "Stanton System", "Aegis Dynamics", "UEE"). The goal is to use language that feels natural to a French-speaking Star Citizen fan.
 

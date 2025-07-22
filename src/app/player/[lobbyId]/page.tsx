@@ -12,6 +12,7 @@ import Link from 'next/link';
 
 interface LobbyData {
   topic: string;
+  difficulty: 'easy' | 'medium' | 'hard';
   status?: 'waiting' | 'playing' | 'finished';
 }
 
@@ -146,7 +147,7 @@ function PlayerLobbyContent() {
         <CardHeader>
           <CardTitle className="text-center text-primary">Salon: {lobbyId}</CardTitle>
           <CardDescription className="text-center capitalize">
-            Thème du quiz : {lobbyData?.topic}
+            Thème: {lobbyData?.topic} - Difficulté: {lobbyData?.difficulty}
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -65,6 +65,7 @@ export default function QuizPage() {
       const result: GenerateStarCitizenQuizOutput = await generateStarCitizenQuiz({
         topic: data.topic,
         numQuestions: data.numQuestions,
+        difficulty: data.difficulty,
       });
       setQuiz(result.quiz);
       setGameState({ currentQuestionIndex: 0, phase: 'question' });

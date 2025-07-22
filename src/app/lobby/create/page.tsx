@@ -41,7 +41,8 @@ export default function CreateLobbyPage() {
     try {
       const result: GenerateStarCitizenQuizOutput = await generateStarCitizenQuiz({
         topic: data.topic,
-        numQuestions: data.numQuestions
+        numQuestions: data.numQuestions,
+        difficulty: data.difficulty,
       });
 
       const generatedQuiz: Quiz = result.quiz;
@@ -54,6 +55,7 @@ export default function CreateLobbyPage() {
         quiz: generatedQuiz,
         topic: data.topic,
         timer: data.timer,
+        difficulty: data.difficulty,
         createdAt: new Date(),
         hostName: data.playerName,
         status: 'waiting', // initial status
