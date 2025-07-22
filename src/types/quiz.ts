@@ -1,4 +1,5 @@
 
+
 export interface QuizQuestion {
   question: string;
   options: string[];
@@ -17,6 +18,8 @@ export interface PlayerState {
   name: string;
   score: number;
   streak: number;
+  negativeStreak: number;
+  maxNegativeStreak: number;
 }
 
 export interface LobbyData {

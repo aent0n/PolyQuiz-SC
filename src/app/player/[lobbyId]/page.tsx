@@ -52,7 +52,7 @@ function PlayerLobbyContent() {
         try {
             const lobbySnap = await getDoc(lobbyDocRef);
             if (!lobbySnap.exists() || lobbySnap.data().status === 'playing') {
-                setError('Ce salon n\'existe plus ou la partie a déjà commencé.');
+                setError("Ce salon n'existe plus ou la partie a déjà commencé.");
                 setLoading(false);
                 return;
             }
@@ -63,6 +63,8 @@ function PlayerLobbyContent() {
                 joinedAt: new Date(),
                 score: 0,
                 streak: 0,
+                negativeStreak: 0,
+                maxNegativeStreak: 0,
             });
             console.log(`Joueur ${playerName} enregistré dans le salon ${lobbyId}`);
         } catch (err) {
@@ -83,7 +85,7 @@ function PlayerLobbyContent() {
         }
         setError(null);
       } else {
-        setError('Le salon a été fermé par l\'hôte.');
+        setError("Le salon a été fermé par l'hôte.");
         setLobbyData(null);
       }
       setLoading(false);

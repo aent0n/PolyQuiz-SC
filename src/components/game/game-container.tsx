@@ -58,18 +58,31 @@ async function calculateAndApplyScores(lobbyId: string, questionIndex: number) {
 
           let newScore = playerData.score;
           let newStreak = playerData.streak;
+          let newNegativeStreak = playerData.negativeStreak;
+          let newMaxNegativeStreak = playerData.maxNegativeStreak;
+
 
           if (isCorrect) {
               newStreak += 1;
+              newNegativeStreak = 0; // Reset negative streak
               let pointsGained = BASE_POINTS;
               if (newStreak >= STREAK_BONUS_THRESHOLD) {
                   pointsGained += STREAK_BONUS_POINTS;
               }
               newScore += pointsGained;
           } else {
-              newStreak = 0;
+              newStreak = 0; // Reset positive streak
+              newNegativeStreak += 1;
+              if (newNegativeStreak > newMaxNegativeStreak) {
+                  newMaxNegativeStreak = newNegativeStreak;
+              }
           }
-          transaction.update(playerDoc.ref, { score: newScore, streak: newStreak });
+          transaction.update(playerDoc.ref, { 
+            score: newScore, 
+            streak: newStreak,
+            negativeStreak: newNegativeStreak,
+            maxNegativeStreak: newMaxNegativeStreak,
+          });
       });
 
       // Mark this question's scores as calculated

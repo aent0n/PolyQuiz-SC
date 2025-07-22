@@ -8,7 +8,7 @@ import { db } from '@/lib/firebase';
 import type { PlayerState } from '@/types/quiz';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Home, BarChart3, CheckCircle2, XCircle, Crown } from 'lucide-react';
+import { Loader2, Home, BarChart3, CheckCircle2, XCircle, Crown, Flame } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -25,6 +25,7 @@ interface EnrichedPlayerState extends PlayerState {
     answers: Answer[];
     correctAnswersCount: number;
     maxStreak: number;
+    maxNegativeStreak: number;
 }
 
 function GameResults() {
@@ -81,22 +82,25 @@ function GameResults() {
                     const playerAnswers = allAnswers.filter(a => a.playerName === playerData.name);
                     const correctAnswersCount = playerAnswers.filter(a => a.isCorrect).length;
                     
-                    // Calculate max streak
-                    let maxStreak = 0;
+                    // Calculate max streak (from player data, already calculated)
+                    const maxStreak = playerData.streak; // This seems to track current streak, not max. Let's recalculate max here for safety.
+                    const maxNegativeStreak = playerData.maxNegativeStreak;
+                    
+                    let calculatedMaxStreak = 0;
                     let currentStreak = 0;
                     const sortedAnswers = playerAnswers.sort((a,b) => a.questionIndex - b.questionIndex);
                     for (const answer of sortedAnswers) {
                         if (answer.isCorrect) {
                             currentStreak++;
                         } else {
-                            if (currentStreak > maxStreak) {
-                                maxStreak = currentStreak;
+                            if (currentStreak > calculatedMaxStreak) {
+                                calculatedMaxStreak = currentStreak;
                             }
                             currentStreak = 0;
                         }
                     }
-                    if (currentStreak > maxStreak) {
-                        maxStreak = currentStreak;
+                    if (currentStreak > calculatedMaxStreak) {
+                        calculatedMaxStreak = currentStreak;
                     }
 
                     return { 
@@ -104,7 +108,8 @@ function GameResults() {
                         ...playerData, 
                         answers: sortedAnswers, 
                         correctAnswersCount,
-                        maxStreak
+                        maxStreak: calculatedMaxStreak,
+                        maxNegativeStreak: playerData.maxNegativeStreak,
                     };
                 });
 
@@ -174,9 +179,10 @@ function GameResults() {
                                             {player.name}
                                             {isPlayerHost && <Crown className="h-5 w-5 text-yellow-400" />}
                                         </p>
-                                        <p className="text-sm text-foreground/70">
-                                            Série max: <span className="font-semibold">{player.maxStreak}</span>
-                                        </p>
+                                        <div className="flex gap-4 text-sm text-foreground/70">
+                                            <p>Série max: <span className="font-semibold">{player.maxStreak}</span></p>
+                                            <p>Série nég. max: <span className="font-semibold">{player.maxNegativeStreak}</span></p>
+                                        </div>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-2xl font-bold text-primary">{player.score} pts</p>
@@ -204,6 +210,7 @@ function GameResults() {
                                     <TableHead>Joueur</TableHead>
                                     <TableHead className="text-center">Score</TableHead>
                                     <TableHead className="text-center">Série Max</TableHead>
+                                    <TableHead className="text-center">Série Nég. Max</TableHead>
                                     <TableHead className="text-center">Réponses Correctes</TableHead>
                                     <TableHead className="text-center">Détail (Q1...)</TableHead>
                                 </TableRow>
@@ -221,6 +228,7 @@ function GameResults() {
                                             </TableCell>
                                             <TableCell className="text-center font-bold">{player.score}</TableCell>
                                             <TableCell className="text-center">{player.maxStreak}</TableCell>
+                                            <TableCell className="text-center">{player.maxNegativeStreak}</TableCell>
                                             <TableCell className="text-center">{player.correctAnswersCount} / {questionCount}</TableCell>
                                             <TableCell className="flex justify-center gap-2 flex-wrap">
                                                 {Array.from({ length: questionCount }).map((_, qIndex) => {
@@ -267,5 +275,3 @@ export default function ResultsPage() {
         </main>
     )
 }
-
-    

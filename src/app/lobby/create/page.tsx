@@ -65,6 +65,8 @@ export default function CreateLobbyPage() {
         joinedAt: new Date(),
         score: 0,
         streak: 0,
+        negativeStreak: 0,
+        maxNegativeStreak: 0,
       });
 
       await batch.commit();
