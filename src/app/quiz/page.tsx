@@ -13,6 +13,8 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { SoloGameHud } from '@/components/quiz/solo-game-hud';
 
+const SOLO_QUESTION_OPTIONS = [3, 5, 7];
+
 export default function QuizPage() {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -134,7 +136,13 @@ export default function QuizPage() {
     }
     return (
       <>
-        <QuizSetupForm onSubmit={handleStartQuiz} isLoading={isLoading} showHeader={true} />
+        <QuizSetupForm 
+          onSubmit={handleStartQuiz} 
+          isLoading={isLoading} 
+          showHeader={true} 
+          questionOptions={SOLO_QUESTION_OPTIONS}
+          defaultNumQuestions="5"
+        />
         <div className="text-center mt-6">
           <Link href="/" passHref>
             <Button variant="outline">

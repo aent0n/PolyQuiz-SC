@@ -46,7 +46,6 @@ const topics = [
     { value: 'systèmes stellaires', label: 'Systèmes Stellaires' },
 ];
 
-const questionOptions = [3, 5, 10];
 const timerOptions = [10, 15, 20, 30];
 
 interface QuizSetupFormProps {
@@ -54,9 +53,18 @@ interface QuizSetupFormProps {
   isLoading: boolean;
   showHeader?: boolean;
   showPlayerName?: boolean;
+  questionOptions?: number[];
+  defaultNumQuestions?: string;
 }
 
-export function QuizSetupForm({ onSubmit, isLoading, showHeader = true, showPlayerName = false }: QuizSetupFormProps) {
+export function QuizSetupForm({ 
+  onSubmit, 
+  isLoading, 
+  showHeader = true, 
+  showPlayerName = false, 
+  questionOptions = [3, 5, 10],
+  defaultNumQuestions = '5'
+}: QuizSetupFormProps) {
   const [isCustomQuestions, setIsCustomQuestions] = useState(false);
   const [isCustomTimer, setIsCustomTimer] = useState(false);
 
@@ -91,7 +99,7 @@ export function QuizSetupForm({ onSubmit, isLoading, showHeader = true, showPlay
     resolver: zodResolver(customFormSchema),
     defaultValues: {
       topic: 'mix',
-      numQuestionsSelect: '5',
+      numQuestionsSelect: defaultNumQuestions,
       timerSelect: '15',
       numQuestionsCustom: undefined,
       timerCustom: undefined,

@@ -19,6 +19,8 @@ const generateLobbyId = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 };
 
+const MULTIPLAYER_QUESTION_OPTIONS = [10, 15, 20];
+
 export default function CreateLobbyPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -111,6 +113,8 @@ export default function CreateLobbyPage() {
               isLoading={isLoading} 
               showHeader={false} 
               showPlayerName={true} 
+              questionOptions={MULTIPLAYER_QUESTION_OPTIONS}
+              defaultNumQuestions="10"
             />
             <div className="text-center mt-6">
               <Link href="/" passHref>
