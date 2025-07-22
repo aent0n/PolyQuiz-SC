@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { LogIn, PlusCircle, Shield, PenSquare, Rocket, GitCommitHorizontal, BookOpenCheck, List, Bug, BarChart3, Flame } from 'lucide-react';
+import { LogIn, PlusCircle, Shield, PenSquare, Rocket, GitCommitHorizontal, BookOpenCheck, List, Bug, BarChart3, Flame, BrainCircuit, CheckCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -67,15 +67,22 @@ export function HomePage() {
             <DialogHeader>
               <DialogTitle className="text-primary text-2xl">Notes de version v1.3</DialogTitle>
               <DialogDescription>
-                Résultats de partie améliorés et nouvelles options.
+                Difficulté adaptable, IA améliorée et plus de fun !
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="flex items-start gap-4">
-                <BarChart3 className="h-5 w-5 text-primary mt-1" />
+                <BrainCircuit className="h-5 w-5 text-primary mt-1" />
                 <div>
-                  <h4 className="font-semibold">Statistiques Détaillées</h4>
-                  <p className="text-sm text-muted-foreground">L'écran des résultats affiche désormais le classement, le nombre de réponses correctes, et les séries de bonnes réponses. La vue de l'hôte offre un tableau complet des performances de chaque joueur.</p>
+                  <h4 className="font-semibold">Niveaux de Difficulté</h4>
+                  <p className="text-sm text-muted-foreground">Choisissez entre facile, moyen, et difficile pour adapter le quiz à votre niveau de connaissance de l'univers.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <CheckCheck className="h-5 w-5 text-primary mt-1" />
+                <div>
+                  <h4 className="font-semibold">Questions plus pertinentes</h4>
+                  <p className="text-sm text-muted-foreground">L'IA a été affinée pour créer des questions plus concises et pour éviter de donner des indices sur la réponse dans l'intitulé.</p>
                 </div>
               </div>
                <div className="flex items-start gap-4">
@@ -89,14 +96,7 @@ export function HomePage() {
                 <List className="h-5 w-5 text-primary mt-1" />
                 <div>
                   <h4 className="font-semibold">Configuration de Quiz Adaptée</h4>
-                  <p className="text-sm text-muted-foreground">Les options pour le nombre de questions sont maintenant différentes pour le mode solo (plus courtes) et le mode multijoueur (plus longues), pour une mise en place plus rapide.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <Bug className="h-5 w-5 text-primary mt-1" />
-                <div>
-                  <h4 className="font-semibold">Correction de Bugs Majeurs</h4>
-                  <p className="text-sm text-muted-foreground">Résolution des problèmes de score lors de l'annulation d'une question par l'hôte et de divers bugs de stabilité.</p>
+                  <p className="text-sm text-muted-foreground">Les options pour le nombre de questions sont maintenant différentes pour le mode solo et le mode multijoueur.</p>
                 </div>
               </div>
             </div>
