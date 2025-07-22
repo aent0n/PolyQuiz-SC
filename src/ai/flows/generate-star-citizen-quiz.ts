@@ -55,6 +55,7 @@ const generateStarCitizenQuizPrompt = ai.definePrompt({
   For each question:
   - Provide a brief, lore-rich explanation for the correct answer. The explanation should be detailed and include specific lore elements like dates, entities (corporations, alien races), historical events, or important characters.
   - Ensure that the answer is one of the 4 options provided.
+  - CRUCIAL: The question text MUST NOT contain any part of the correct answer. For example, if the answer is "Aegis Idris", the word "Aegis" must not appear in the question. The question should be formulated to test knowledge without giving away clues.
   `,
 });
 
