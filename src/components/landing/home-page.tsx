@@ -72,28 +72,28 @@ export function HomePage() {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="flex items-start gap-4">
-                <BrainCircuit className="h-5 w-5 text-primary mt-1" />
+                <BrainCircuit className="h-6 w-6 text-primary mt-1" />
                 <div>
                   <h4 className="font-semibold">Niveaux de Difficulté</h4>
                   <p className="text-sm text-muted-foreground">Choisissez entre facile, moyen, et difficile pour adapter le quiz à votre niveau de connaissance de l'univers.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
-                <CheckCheck className="h-5 w-5 text-primary mt-1" />
+                <CheckCheck className="h-6 w-6 text-primary mt-1" />
                 <div>
                   <h4 className="font-semibold">Questions plus pertinentes</h4>
                   <p className="text-sm text-muted-foreground">L'IA a été affinée pour créer des questions plus concises et pour éviter de donner des indices sur la réponse dans l'intitulé.</p>
                 </div>
               </div>
                <div className="flex items-start gap-4">
-                <Flame className="h-5 w-5 text-primary mt-1" />
+                <Flame className="h-6 w-6 text-primary mt-1" />
                 <div>
                   <h4 className="font-semibold">Statistiques Amusantes</h4>
                   <p className="text-sm text-muted-foreground">Découvrez qui a eu la plus grande série de... mauvaises réponses ! Une nouvelle statistique pour pimenter les fins de partie.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
-                <List className="h-5 w-5 text-primary mt-1" />
+                <List className="h-6 w-6 text-primary mt-1" />
                 <div>
                   <h4 className="font-semibold">Configuration de Quiz Adaptée</h4>
                   <p className="text-sm text-muted-foreground">Les options pour le nombre de questions sont maintenant différentes pour le mode solo et le mode multijoueur.</p>
