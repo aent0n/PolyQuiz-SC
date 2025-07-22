@@ -53,6 +53,7 @@ const generateStarCitizenQuizPrompt = ai.definePrompt({
   The entire quiz should be primarily in French, but you MUST keep technical terms, ship names, or proper nouns in English if their French translation is awkward or not commonly used by the community (e.g., "Jump Point", "Stanton System", "Aegis Dynamics", "UEE"). The goal is to use language that feels natural to a French-speaking Star Citizen fan.
 
   For each question:
+  - Formulate concise and direct questions. Avoid lengthy sentences to ensure the question can be read and understood quickly.
   - Provide a brief, lore-rich explanation for the correct answer. The explanation should be detailed and include specific lore elements like dates, entities (corporations, alien races), historical events, or important characters.
   - Ensure that the answer is one of the 4 options provided.
   - CRUCIAL: The question text MUST NOT contain any part of the correct answer. For example, if the answer is "Aegis Idris", the word "Aegis" must not appear in the question. The question should be formulated to test knowledge without giving away clues.
