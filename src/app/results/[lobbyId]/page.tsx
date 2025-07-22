@@ -24,6 +24,7 @@ interface EnrichedPlayerState extends PlayerState {
     id: string;
     answers: Answer[];
     correctAnswersCount: number;
+    maxStreak: number;
 }
 
 function GameResults() {
@@ -62,8 +63,8 @@ function GameResults() {
 
                 if (lobbySnapshot.exists()) {
                     setHostName(lobbySnapshot.data().hostName);
-                    // Use the quiz length from the lobby data for total questions
-                    setQuestionCount(lobbySnapshot.data().quiz.length);
+                    const numQuestions = lobbySnapshot.data().quiz.length;
+                    setQuestionCount(numQuestions);
                 }
 
 
@@ -79,7 +80,32 @@ function GameResults() {
                     const playerData = doc.data() as PlayerState;
                     const playerAnswers = allAnswers.filter(a => a.playerName === playerData.name);
                     const correctAnswersCount = playerAnswers.filter(a => a.isCorrect).length;
-                    return { id: doc.id, ...playerData, answers: playerAnswers, correctAnswersCount };
+                    
+                    // Calculate max streak
+                    let maxStreak = 0;
+                    let currentStreak = 0;
+                    const sortedAnswers = playerAnswers.sort((a,b) => a.questionIndex - b.questionIndex);
+                    for (const answer of sortedAnswers) {
+                        if (answer.isCorrect) {
+                            currentStreak++;
+                        } else {
+                            if (currentStreak > maxStreak) {
+                                maxStreak = currentStreak;
+                            }
+                            currentStreak = 0;
+                        }
+                    }
+                    if (currentStreak > maxStreak) {
+                        maxStreak = currentStreak;
+                    }
+
+                    return { 
+                        id: doc.id, 
+                        ...playerData, 
+                        answers: sortedAnswers, 
+                        correctAnswersCount,
+                        maxStreak
+                    };
                 });
 
                 // Sort by score descending
@@ -149,7 +175,7 @@ function GameResults() {
                                             {isPlayerHost && <Crown className="h-5 w-5 text-yellow-400" />}
                                         </p>
                                         <p className="text-sm text-foreground/70">
-                                            Série max: <span className="font-semibold">{player.streak}</span>
+                                            Série max: <span className="font-semibold">{player.maxStreak}</span>
                                         </p>
                                     </div>
                                     <div className="text-right">
@@ -194,7 +220,7 @@ function GameResults() {
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-center font-bold">{player.score}</TableCell>
-                                            <TableCell className="text-center">{player.streak}</TableCell>
+                                            <TableCell className="text-center">{player.maxStreak}</TableCell>
                                             <TableCell className="text-center">{player.correctAnswersCount} / {questionCount}</TableCell>
                                             <TableCell className="flex justify-center gap-2 flex-wrap">
                                                 {Array.from({ length: questionCount }).map((_, qIndex) => {
@@ -241,3 +267,5 @@ export default function ResultsPage() {
         </main>
     )
 }
+
+    
