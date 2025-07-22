@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { LogIn, PlusCircle, Shield, PenSquare, Rocket, GitCommitHorizontal, BookOpenCheck, List, Bug } from 'lucide-react';
+import { LogIn, PlusCircle, Shield, PenSquare, Rocket, GitCommitHorizontal, BookOpenCheck, List, Bug, BarChart3, Flame } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -60,43 +60,43 @@ export function HomePage() {
         <Dialog>
           <DialogTrigger asChild>
             <Badge variant="outline" className="text-xs cursor-pointer hover:bg-accent">
-                v1.2
+                v1.3
             </Badge>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle className="text-primary text-2xl">Notes de version v1.2</DialogTitle>
+              <DialogTitle className="text-primary text-2xl">Notes de version v1.3</DialogTitle>
               <DialogDescription>
-                Corrections de bugs et améliorations de la stabilité.
+                Résultats de partie améliorés et nouvelles options.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="flex items-start gap-4">
-                <Bug className="h-5 w-5 text-primary mt-1" />
+                <BarChart3 className="h-5 w-5 text-primary mt-1" />
                 <div>
-                  <h4 className="font-semibold">Stabilité Améliorée</h4>
-                  <p className="text-sm text-muted-foreground">Correction de plusieurs bugs critiques en mode "Jeu Solo" qui pouvaient causer des plantages et des boucles infinies. L'expérience est maintenant plus stable.</p>
+                  <h4 className="font-semibold">Statistiques Détaillées</h4>
+                  <p className="text-sm text-muted-foreground">L'écran des résultats affiche désormais le classement, le nombre de réponses correctes, et les séries de bonnes réponses. La vue de l'hôte offre un tableau complet des performances de chaque joueur.</p>
+                </div>
+              </div>
+               <div className="flex items-start gap-4">
+                <Flame className="h-5 w-5 text-primary mt-1" />
+                <div>
+                  <h4 className="font-semibold">Statistiques Amusantes</h4>
+                  <p className="text-sm text-muted-foreground">Découvrez qui a eu la plus grande série de... mauvaises réponses ! Une nouvelle statistique pour pimenter les fins de partie.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
                 <List className="h-5 w-5 text-primary mt-1" />
                 <div>
-                  <h4 className="font-semibold">Plus de Thématiques</h4>
-                  <p className="text-sm text-muted-foreground">De nouveaux sujets de quiz ont été ajoutés (vaisseaux, lieux, etc.) ainsi qu'une option "Mélange de tout" pour varier les plaisirs.</p>
+                  <h4 className="font-semibold">Configuration de Quiz Adaptée</h4>
+                  <p className="text-sm text-muted-foreground">Les options pour le nombre de questions sont maintenant différentes pour le mode solo (plus courtes) et le mode multijoueur (plus longues), pour une mise en place plus rapide.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
-                <Rocket className="h-5 w-5 text-primary mt-1" />
+                <Bug className="h-5 w-5 text-primary mt-1" />
                 <div>
-                  <h4 className="font-semibold">Quiz en Français</h4>
-                  <p className="text-sm text-muted-foreground">Les questions sont maintenant générées en français, avec une touche de "franglais" pour les termes techniques, pour une meilleure immersion.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <BookOpenCheck className="h-5 w-5 text-primary mt-1" />
-                <div>
-                  <h4 className="font-semibold">Explications de Lore</h4>
-                  <p className="text-sm text-muted-foreground">Après chaque question, découvrez une explication riche en lore pour parfaire vos connaissances de l'univers.</p>
+                  <h4 className="font-semibold">Correction de Bugs Majeurs</h4>
+                  <p className="text-sm text-muted-foreground">Résolution des problèmes de score lors de l'annulation d'une question par l'hôte et de divers bugs de stabilité.</p>
                 </div>
               </div>
             </div>
